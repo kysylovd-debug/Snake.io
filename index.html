@@ -56,7 +56,7 @@
         }
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none; appearance: none;
-            width: 25px; height: 25px; background: lime;
+            width: 25px; height: 25px; background: #6495ED; /* Couleur du serpent */
             border: 2px solid white; border-radius: 50%; cursor: pointer;
         }
         #appleSlider::-webkit-slider-thumb { background: red; }
@@ -173,17 +173,23 @@
         
         function drawSnake() {
             snake.forEach((segment, index) => {
-                ctx.fillStyle = 'lime';
+                ctx.fillStyle = '#6495ED'; // Couleur bleue
+                ctx.strokeStyle = 'white'; // Couleur du contour
+                ctx.lineWidth = Math.max(1, gridSize / 20); // Épaisseur proportionnelle du contour
+
                 const x = segment.x * gridSize;
                 const y = segment.y * gridSize;
+
+                // Dessine la base carrée avec son contour
                 ctx.fillRect(x, y, gridSize, gridSize);
-                if (index === 0) {
+                ctx.strokeRect(x, y, gridSize, gridSize);
+                
+                // Dessine les parties arrondies (tête et queue)
+                if (index === 0) { // Tête
                     ctx.beginPath();
                     let arcX = x + gridSize / 2, arcY = y + gridSize / 2;
-                    if (direction === 'right') { arcX = x + gridSize; }
-                    else if (direction === 'left') { arcX = x; }
-                    else if (direction === 'up') { arcY = y; }
-                    else if (direction === 'down') { arcY = y + gridSize; }
+                    if (direction === 'right') { arcX = x + gridSize; } else if (direction === 'left') { arcX = x; }
+                    else if (direction === 'up') { arcY = y; } else if (direction === 'down') { arcY = y + gridSize; }
                     
                     if(direction === 'up' || direction === 'down'){
                          ctx.arc(arcX, arcY, gridSize / 2, direction === 'up' ? Math.PI : 0, direction === 'up' ? 0 : Math.PI);
@@ -191,22 +197,57 @@
                          ctx.arc(arcX, arcY, gridSize / 2, direction === 'left' ? Math.PI/2 : -Math.PI/2, direction === 'left' ? -Math.PI/2 : Math.PI/2);
                     }
                     ctx.fill();
+                    ctx.stroke();
+
+                    // Dessine les yeux et la langue par-dessus
+                    const centerX = x + gridSize / 2;
+                    const centerY = y + gridSize / 2;
+                    
+                    // Yeux
+                    ctx.fillStyle = 'white';
+                    const eyeOffset = gridSize / 4;
+                    const eyeDist = gridSize / 5;
+                    const eyeRadius = Math.max(1.5, gridSize / 12);
+                    let eye1X, eye1Y, eye2X, eye2Y;
+                    if (direction === 'right') { eye1X = centerX + eyeDist; eye1Y = centerY - eyeOffset; eye2X = centerX + eyeDist; eye2Y = centerY + eyeOffset; }
+                    else if (direction === 'left') { eye1X = centerX - eyeDist; eye1Y = centerY - eyeOffset; eye2X = centerX - eyeDist; eye2Y = centerY + eyeOffset; }
+                    else if (direction === 'up') { eye1X = centerX - eyeOffset; eye1Y = centerY - eyeDist; eye2X = centerX + eyeOffset; eye2Y = centerY - eyeDist; }
+                    else { eye1X = centerX - eyeOffset; eye1Y = centerY + eyeDist; eye2X = centerX + eyeOffset; eye2Y = centerY + eyeDist; }
+                    ctx.beginPath();
+                    ctx.arc(eye1X, eye1Y, eyeRadius, 0, 2 * Math.PI);
+                    ctx.arc(eye2X, eye2Y, eyeRadius, 0, 2 * Math.PI);
+                    ctx.fill();
+
+                    // Langue
+                    ctx.strokeStyle = 'red';
+                    ctx.lineWidth = Math.max(1, gridSize / 15);
+                    ctx.beginPath();
+                    const tongueLength = gridSize / 3;
+                    const tongueOffset = gridSize / 2 + ctx.lineWidth;
+                    const prongSize = Math.max(2, gridSize / 8);
+                    let startX, startY, midX, midY, tip1X, tip1Y, tip2X, tip2Y;
+                    if (direction === 'right') { startX = centerX + tongueOffset; startY = centerY; midX = startX + tongueLength / 2; midY = startY; tip1X = midX + prongSize; tip1Y = midY - prongSize; tip2X = midX + prongSize; tip2Y = midY + prongSize; }
+                    else if (direction === 'left') { startX = centerX - tongueOffset; startY = centerY; midX = startX - tongueLength / 2; midY = startY; tip1X = midX - prongSize; tip1Y = midY - prongSize; tip2X = midX - prongSize; tip2Y = midY + prongSize; }
+                    else if (direction === 'up') { startX = centerX; startY = centerY - tongueOffset; midX = startX; midY = startY - tongueLength / 2; tip1X = midX - prongSize; tip1Y = midY - prongSize; tip2X = midX + prongSize; tip2Y = midY - prongSize; }
+                    else { startX = centerX; startY = centerY + tongueOffset; midX = startX; midY = startY + tongueLength / 2; tip1X = midX - prongSize; tip1Y = midY + prongSize; tip2X = midX + prongSize; tip2Y = midY + prongSize; }
+                    ctx.moveTo(startX, startY); ctx.lineTo(midX, midY); ctx.lineTo(tip1X, tip1Y);
+                    ctx.moveTo(midX, midY); ctx.lineTo(tip2X, tip2Y);
+                    ctx.stroke();
                 }
-                if (index === snake.length - 1 && snake.length > 1) {
+                if (index === snake.length - 1 && snake.length > 1) { // Queue
                     const prevSegment = snake[index - 1];
                     ctx.beginPath();
                     let arcX = x + gridSize / 2, arcY = y + gridSize / 2;
-                    if (prevSegment.x > segment.x) { arcX = x; }
-                    else if (prevSegment.x < segment.x) { arcX = x + gridSize; }
-                    else if (prevSegment.y > segment.y) { arcY = y; }
-                    else if (prevSegment.y < segment.y) { arcY = y + gridSize; }
-
+                    if (prevSegment.x > segment.x) { arcX = x; } else if (prevSegment.x < segment.x) { arcX = x + gridSize; }
+                    else if (prevSegment.y > segment.y) { arcY = y; } else if (prevSegment.y < segment.y) { arcY = y + gridSize; }
+                    
                     if(segment.y !== prevSegment.y){
                         ctx.arc(arcX, arcY, gridSize / 2, segment.y > prevSegment.y ? Math.PI : 0, segment.y > prevSegment.y ? 0 : Math.PI);
                     } else {
                         ctx.arc(arcX, arcY, gridSize / 2, segment.x > prevSegment.x ? Math.PI/2 : -Math.PI/2, segment.x > prevSegment.x ? -Math.PI/2 : Math.PI/2);
                     }
                     ctx.fill();
+                    ctx.stroke();
                 }
             });
         }
@@ -248,7 +289,7 @@ drawGame()}
             ctx.font=`${gridSize*2.5}px "Courier New"`;
             ctx.textAlign='center';
             ctx.fillText('GAME OVER',canvas.width/2,canvas.height/2);
-replayButton.style.display='block';
+            replayButton.style.display='block';
         }
         function handleKeyPress(e){if(countdownActive)return;if(!gameStarted){startGame();return}
 const key=e.key.toLowerCase();if((key==='arrowup'||key==='z'||key==='w')&&direction!=='down')nextDirection='up';if((key==='arrowdown'||key==='s')&&direction!=='up')nextDirection='down';if((key==='arrowleft'||key==='q'||key==='a')&&direction!=='right')nextDirection='left';if((key==='arrowright'||key==='d')&&direction!=='left')nextDirection='right'}
