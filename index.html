@@ -40,18 +40,25 @@
         const ctx = canvas.getContext('2d');
         const scoreElement = document.getElementById('score');
 
-        const gridSize = 20; // La taille des carrés reste la même
-        const tileCount = canvas.width / gridSize; // La grille est plus grande
+        // MODIFICATION: Taille des carrés doublée
+        const gridSize = 40; 
+        const tileCount = canvas.width / gridSize; // 880 / 40 = 22 tuiles
 
         // État du jeu
-        let snake = [{ x: 22, y: 22 }]; // Démarrage au centre de la nouvelle grille
+        let snake = [{ x: 11, y: 11 }]; // Démarrage au centre de la grille 22x22
         let food = {};
         let direction = 'right';
         let score = 0;
         let gameStarted = false;
         let gameLoopInterval;
+        
+        // NOUVEAU: Variables pour la vitesse
+        let currentLevel = 1;
+        const maxLevel = 10;
+        // Vitesses en millisecondes (plus le chiffre est bas, plus c'est rapide)
+        const speeds = [150, 135, 120, 110, 100, 90, 80, 75, 70, 65]; 
+        const scorePerLevel = 2; // On monte de niveau tous les 2 points
 
-        // Dessine l'écran de démarrage
         function drawStartScreen() {
             ctx.fillStyle = 'black';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -62,7 +69,6 @@
             ctx.fillText('pour commencer', canvas.width / 2, canvas.height / 2 + 45);
         }
         
-        // Dessine la grille de fond
         function drawGrid() {
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
             for (let i = 0; i < tileCount; i++) {
@@ -72,7 +78,6 @@
             }
         }
         
-        // Dessine un segment arrondi du serpent
         function drawRoundedRect(x, y, width, height, radius) {
             ctx.beginPath();
             ctx.moveTo(x + radius, y);
@@ -86,6 +91,52 @@
             ctx.quadraticCurveTo(x, y, x + radius, y);
             ctx.closePath();
             ctx.fill();
+        }
+
+        // NOUVEAU: Fonction pour dessiner la barre de vitesse
+        function drawSpeedBar() {
+            const barWidth = 400;
+            const barHeight = 10;
+            const barX = (canvas.width - barWidth) / 2;
+            const barY = canvas.height - 40;
+            const segmentWidth = barWidth / (maxLevel - 1);
+
+            // Dessine les 10 points de niveau
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            for (let i = 0; i < maxLevel; i++) {
+                ctx.beginPath();
+                ctx.arc(barX + i * segmentWidth, barY + barHeight / 2, 3, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+
+            // Dessine le trait vert de progression
+            const trailWidth = (currentLevel - 1) * segmentWidth;
+            if (trailWidth > 0) {
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 5;
+                ctx.beginPath();
+                ctx.moveTo(barX, barY + barHeight / 2);
+                ctx.lineTo(barX + trailWidth, barY + barHeight / 2);
+                ctx.stroke();
+
+                ctx.strokeStyle = 'lime';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(barX, barY + barHeight / 2);
+                ctx.lineTo(barX + trailWidth, barY + barHeight / 2);
+                ctx.stroke();
+            }
+            
+            // Dessine le point vert actuel
+            const dotX = barX + (currentLevel - 1) * segmentWidth;
+            const dotY = barY + barHeight / 2;
+            ctx.fillStyle = 'lime';
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(dotX, dotY, 8, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
         }
 
         function drawGame() {
@@ -103,11 +154,14 @@
                 const x = segment.x * gridSize;
                 const y = segment.y * gridSize;
                 if (index === 0 || index === snake.length - 1) {
-                    drawRoundedRect(x, y, gridSize, gridSize, 5);
+                    drawRoundedRect(x, y, gridSize, gridSize, 10); // Rayon d'arrondi augmenté
                 } else {
                     ctx.fillRect(x, y, gridSize, gridSize);
                 }
             });
+            
+            // Affiche la barre de vitesse
+            drawSpeedBar();
         }
         
         function generateFood() {
@@ -118,6 +172,12 @@
             if (snake.some(seg => seg.x === food.x && seg.y === food.y)) {
                 generateFood();
             }
+        }
+
+        function updateGameSpeed() {
+            clearInterval(gameLoopInterval);
+            const newSpeed = speeds[currentLevel - 1];
+            gameLoopInterval = setInterval(update, newSpeed);
         }
 
         function update() {
@@ -141,6 +201,13 @@
                 score++;
                 scoreElement.textContent = score;
                 generateFood();
+                
+                // NOUVEAU: Logique pour monter de niveau et accélérer
+                const newLevel = Math.min(maxLevel, Math.floor(score / scorePerLevel) + 1);
+                if (newLevel > currentLevel) {
+                    currentLevel = newLevel;
+                    updateGameSpeed();
+                }
             } else {
                 snake.pop();
             }
@@ -159,13 +226,9 @@
         function handleKeyPress(e) {
             if (!gameStarted) {
                 startGame();
-                // on ne prend pas en compte la première touche pour la direction
                 return;
             }
-
-            const key = e.key.toLowerCase(); // Met la touche en minuscule pour simplifier
-
-            // ZQSD (pour clavier AZERTY) et WASD (pour QWERTY)
+            const key = e.key.toLowerCase();
             if ((key === 'arrowup' || key === 'z' || key === 'w') && direction !== 'down') direction = 'up';
             if ((key === 'arrowdown' || key === 's') && direction !== 'up') direction = 'down';
             if ((key === 'arrowleft' || key === 'q' || key === 'a') && direction !== 'right') direction = 'left';
@@ -176,7 +239,8 @@
             if (gameStarted) return;
             gameStarted = true;
             generateFood();
-            gameLoopInterval = setInterval(update, 120); // Vitesse légèrement augmentée pour le grand terrain
+            const initialSpeed = speeds[currentLevel - 1];
+            gameLoopInterval = setInterval(update, initialSpeed);
         }
 
         document.addEventListener('keydown', handleKeyPress);
