@@ -92,7 +92,6 @@
 
         let snake, food, direction, score, gameStarted, gameLoopInterval, currentLevel;
         const maxLevel = 10;
-        // MODIFICATION: Vitesses ajustées pour un maximum plus lent
         const speeds = [150, 140, 130, 120, 110, 100, 95, 90, 85, 80]; 
         const scorePerLevel = 2;
 
@@ -126,18 +125,15 @@
             }
         }
         
-        // MODIFICATION: Retour à la forme demi-carré/demi-cercle
         function drawSnake() {
-            ctx.fillStyle = 'lime';
-
             snake.forEach((segment, index) => {
+                // CORRIGÉ : Réinitialise la couleur pour chaque segment
+                ctx.fillStyle = 'lime'; 
                 const x = segment.x * gridSize;
                 const y = segment.y * gridSize;
 
-                // Dessine toujours la base carrée
                 ctx.fillRect(x, y, gridSize, gridSize);
                 
-                // Tête en demi-cercle directionnel
                 if (index === 0) {
                     ctx.beginPath();
                     let arcX = x + gridSize / 2, arcY = y + gridSize / 2, startAngle = 0, endAngle = 0;
@@ -151,7 +147,6 @@
                     const centerX = x + gridSize / 2;
                     const centerY = y + gridSize / 2;
 
-                    // Yeux
                     ctx.fillStyle = 'black';
                     const eyeOffset = gridSize / 4;
                     const eyeDist = gridSize / 5;
@@ -165,17 +160,18 @@
                     ctx.arc(eye2X, eye2Y, 3, 0, 2 * Math.PI);
                     ctx.fill();
 
-                    // Langue (plus courte et toujours visible)
+                    // CORRIGÉ : Langue positionnée devant la tête
                     ctx.strokeStyle = 'red';
                     ctx.lineWidth = 3;
                     ctx.beginPath();
-                    const tongueLength = gridSize / 4; // Plus courte
-                    let startX = centerX, startY = centerY, midX, midY, tip1X, tip1Y, tip2X, tip2Y;
+                    const tongueLength = gridSize / 4;
+                    let startX, startY, midX, midY, tip1X, tip1Y, tip2X, tip2Y;
+                    const tongueOffset = 22; // Décalage pour sortir de la tête
                     
-                    if (direction === 'right') { startX += 20; midX = startX + tongueLength / 2; midY = startY; tip1X = midX + 5; tip1Y = midY - 5; tip2X = midX + 5; tip2Y = midY + 5; }
-                    else if (direction === 'left') { startX -= 20; midX = startX - tongueLength / 2; midY = startY; tip1X = midX - 5; tip1Y = midY - 5; tip2X = midX - 5; tip2Y = midY + 5; }
-                    else if (direction === 'up') { startY -= 20; midX = startX; midY = startY - tongueLength / 2; tip1X = midX - 5; tip1Y = midY - 5; tip2X = midX + 5; tip2Y = midY - 5; }
-                    else { startY += 20; midX = startX; midY = startY + tongueLength / 2; tip1X = midX - 5; tip1Y = midY + 5; tip2X = midX + 5; tip2Y = midY + 5; }
+                    if (direction === 'right') { startX = centerX + tongueOffset; startY = centerY; midX = startX + tongueLength / 2; midY = startY; tip1X = midX + 5; tip1Y = midY - 5; tip2X = midX + 5; tip2Y = midY + 5; }
+                    else if (direction === 'left') { startX = centerX - tongueOffset; startY = centerY; midX = startX - tongueLength / 2; midY = startY; tip1X = midX - 5; tip1Y = midY - 5; tip2X = midX - 5; tip2Y = midY + 5; }
+                    else if (direction === 'up') { startX = centerX; startY = centerY - tongueOffset; midX = startX; midY = startY - tongueLength / 2; tip1X = midX - 5; tip1Y = midY - 5; tip2X = midX + 5; tip2Y = midY - 5; }
+                    else { startX = centerX; startY = centerY + tongueOffset; midX = startX; midY = startY + tongueLength / 2; tip1X = midX - 5; tip1Y = midY + 5; tip2X = midX + 5; tip2Y = midY + 5; }
 
                     ctx.moveTo(startX, startY);
                     ctx.lineTo(midX, midY);
@@ -185,7 +181,6 @@
                     ctx.stroke();
                 }
 
-                // Queue en demi-cercle directionnel
                 if (index === snake.length - 1 && snake.length > 1) {
                     const prevSegment = snake[index - 1];
                     ctx.beginPath();
