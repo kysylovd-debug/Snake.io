@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Jeu du Serpent</title>
     <style>
-        /* Ajout d'une variable pour la taille du jeu pour une maintenance facile */
         :root {
             --game-size: 884px;
         }
@@ -24,14 +23,12 @@
         }
         .game-wrapper {
             position: relative;
-            /* Le wrapper définit la taille maximale */
             width: var(--game-size);
             height: var(--game-size);
             max-width: 95vw;
             max-height: 95vw;
         }
         canvas {
-            /* Le canvas remplit le wrapper */
             width: 100%;
             height: 100%;
             background-color: #000;
@@ -75,16 +72,21 @@
             border: 3px solid white; border-radius: 8px;
             cursor: pointer;
         }
+
+        /* MODIFICATION: Style des contrôles tactiles */
         #touch-controls {
-            display: none; position: absolute;
-            bottom: 30px; right: 30px;
-            width: 150px; height: 150px;
-            opacity: 0.5; z-index: 5;
+            display: none; /* Caché par défaut, activé par JS */
+            position: relative; /* N'est plus superposé */
+            margin: 20px auto 10px auto; /* Centré avec de l'espace */
+            width: 150px;
+            height: 150px;
         }
         .touch-btn {
             position: absolute;
-            width: 50px; height: 50px;
-            background-color: #fff; border-radius: 10px;
+            width: 50px;
+            height: 50px;
+            background-color: rgba(255, 255, 255, 0.7);
+            border-radius: 10px;
         }
         #touch-up { top: 0; left: 50px; }
         #touch-down { bottom: 0; left: 50px; }
@@ -97,13 +99,15 @@
     <div class="game-wrapper" id="game-wrapper">
         <canvas id="gameCanvas"></canvas>
         <button id="replayButton">Rejouer</button>
-        <div id="touch-controls">
-            <div id="touch-up" class="touch-btn"></div>
-            <div id="touch-down" class="touch-btn"></div>
-            <div id="touch-left" class="touch-btn"></div>
-            <div id="touch-right" class="touch-btn"></div>
-        </div>
     </div>
+
+    <div id="touch-controls">
+        <div id="touch-up" class="touch-btn"></div>
+        <div id="touch-down" class="touch-btn"></div>
+        <div id="touch-left" class="touch-btn"></div>
+        <div id="touch-right" class="touch-btn"></div>
+    </div>
+
     <div class="controls">
         <p>Score: <span id="score">0</span></p>
         <div class="slider-container">
@@ -120,16 +124,14 @@
     </div>
 
     <script>
+        // Le code JavaScript reste le même, car il cible les éléments par leur ID.
+        // Seuls le HTML et le CSS ont été modifiés.
+        
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const wrapper = document.getElementById('game-wrapper');
-        
-        // --- Variables de jeu ---
-        // MODIFICATION: La grille est fixe, la taille des pixels devient variable
         const tileCount = 22;
-        let gridSize; // Sera calculé dynamiquement
-
-        // --- Le reste des variables ---
+        let gridSize; 
         const scoreElement = document.getElementById('score');
         const speedSlider = document.getElementById('speedSlider');
         const appleSlider = document.getElementById('appleSlider');
@@ -141,17 +143,11 @@
         const speeds = [150, 140, 130, 120, 110, 100, 95, 90, 85, 80]; 
         const scorePerLevel = 2;
 
-        // NOUVEAU: Fonction pour redimensionner le canvas
         function resizeCanvas() {
-            // Prend la plus petite dimension du conteneur pour garder le jeu carré
             const size = Math.min(wrapper.clientWidth, wrapper.clientHeight);
             canvas.width = size;
             canvas.height = size;
-
-            // Recalcule la taille d'une case de la grille
             gridSize = canvas.width / tileCount;
-
-            // Redessine le jeu avec la nouvelle taille
             if (!gameStarted) {
                 drawStartScreen();
             } else {
@@ -172,9 +168,76 @@
             scoreElement.textContent = score;
         }
         
-        // Les fonctions de dessin (drawSnake, drawGame, etc.) n'ont pas besoin de changer
-        // car elles utilisent la variable 'gridSize' qui est maintenant dynamique.
-
+        function drawGrid() {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = Math.max(1, gridSize / 40);
+            for (let i = 0; i < tileCount; i++) {
+                for (let j = 0; j < tileCount; j++) {
+                    ctx.strokeRect(i * gridSize, j * gridSize, gridSize, gridSize);
+                }
+            }
+        }
+        
+        function drawSnake() {
+            snake.forEach((segment, index) => {
+                ctx.fillStyle = 'lime';
+                const x = segment.x * gridSize;
+                const y = segment.y * gridSize;
+                ctx.fillRect(x, y, gridSize, gridSize);
+                if (index === 0) {
+                    ctx.beginPath();
+                    let arcX = x + gridSize / 2, arcY = y + gridSize / 2, startAngle = 0, endAngle = 0;
+                    if (direction === 'right') { arcX = x + gridSize; startAngle = -Math.PI / 2; endAngle = Math.PI / 2; }
+                    else if (direction === 'left') { arcX = x; startAngle = Math.PI / 2; endAngle = -Math.PI / 2; }
+                    else if (direction === 'up') { arcY = y; startAngle = Math.PI; endAngle = 0; }
+                    else if (direction === 'down') { arcY = y + gridSize; startAngle = 0; endAngle = Math.PI; }
+                    ctx.arc(arcX, arcY, gridSize / 2, startAngle, endAngle);
+                    ctx.fill();
+                    const centerX = x + gridSize / 2;
+                    const centerY = y + gridSize / 2;
+                    ctx.fillStyle = 'black';
+                    const eyeOffset = gridSize / 4;
+                    const eyeDist = gridSize / 5;
+                    const eyeRadius = Math.max(1, gridSize / 14);
+                    let eye1X, eye1Y, eye2X, eye2Y;
+                    if (direction === 'right') { eye1X = centerX + eyeDist; eye1Y = centerY - eyeOffset; eye2X = centerX + eyeDist; eye2Y = centerY + eyeOffset; }
+                    else if (direction === 'left') { eye1X = centerX - eyeDist; eye1Y = centerY - eyeOffset; eye2X = centerX - eyeDist; eye2Y = centerY + eyeOffset; }
+                    else if (direction === 'up') { eye1X = centerX - eyeOffset; eye1Y = centerY - eyeDist; eye2X = centerX + eyeOffset; eye2Y = centerY - eyeDist; }
+                    else { eye1X = centerX - eyeOffset; eye1Y = centerY + eyeDist; eye2X = centerX + eyeOffset; eye2Y = centerY + eyeDist; }
+                    ctx.beginPath();
+                    ctx.arc(eye1X, eye1Y, eyeRadius, 0, 2 * Math.PI);
+                    ctx.arc(eye2X, eye2Y, eyeRadius, 0, 2 * Math.PI);
+                    ctx.fill();
+                    ctx.strokeStyle = 'red';
+                    ctx.lineWidth = Math.max(1, gridSize / 15);
+                    ctx.beginPath();
+                    const tongueLength = gridSize / 4;
+                    let startX, startY, midX, midY, tip1X, tip1Y, tip2X, tip2Y;
+                    const tongueOffset = gridSize / 2 + (ctx.lineWidth);
+                    if (direction === 'right') { startX = centerX + tongueOffset; startY = centerY; midX = startX + tongueLength / 2; midY = startY; tip1X = midX + 5; tip1Y = midY - 5; tip2X = midX + 5; tip2Y = midY + 5; }
+                    else if (direction === 'left') { startX = centerX - tongueOffset; startY = centerY; midX = startX - tongueLength / 2; midY = startY; tip1X = midX - 5; tip1Y = midY - 5; tip2X = midX - 5; tip2Y = midY + 5; }
+                    else if (direction === 'up') { startX = centerX; startY = centerY - tongueOffset; midX = startX; midY = startY - tongueLength / 2; tip1X = midX - 5; tip1Y = midY - 5; tip2X = midX + 5; tip2Y = midY - 5; }
+                    else { startX = centerX; startY = centerY + tongueOffset; midX = startX; midY = startY + tongueLength / 2; tip1X = midX - 5; tip1Y = midY + 5; tip2X = midX + 5; tip2Y = midY + 5; }
+                    ctx.moveTo(startX, startY);
+                    ctx.lineTo(midX, midY);
+                    ctx.lineTo(tip1X, tip1Y);
+                    ctx.moveTo(midX, midY);
+                    ctx.lineTo(tip2X, tip2Y);
+                    ctx.stroke();
+                }
+                if (index === snake.length - 1 && snake.length > 1) {
+                    const prevSegment = snake[index - 1];
+                    ctx.beginPath();
+                    let arcX = x + gridSize / 2, arcY = y + gridSize / 2;
+                    if (prevSegment.x > segment.x) { arcX = x; startAngle = Math.PI / 2; endAngle = -Math.PI / 2; }
+                    else if (prevSegment.x < segment.x) { arcX = x + gridSize; startAngle = -Math.PI / 2; endAngle = Math.PI / 2; }
+                    else if (prevSegment.y > segment.y) { arcY = y; startAngle = Math.PI; endAngle = 0; }
+                    else if (prevSegment.y < segment.y) { arcY = y + gridSize; startAngle = 0; endAngle = Math.PI; }
+                    ctx.arc(arcX, arcY, gridSize / 2, startAngle, endAngle);
+                    ctx.fill();
+                }
+            });
+        }
         function drawGame() {
             ctx.fillStyle = 'black';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -187,41 +250,137 @@
             });
             drawSnake();
         }
+        function generateApples() {
+            while (food.length < numApples) {
+                let newApple = { x: Math.floor(Math.random() * tileCount), y: Math.floor(Math.random() * tileCount) };
+                const onSnake = snake.some(seg => seg.x === newApple.x && seg.y === newApple.y);
+                const onFood = food.some(f => f.x === newApple.x && f.y === newApple.y);
+                if (!onSnake && !onFood) {
+                    food.push(newApple);
+                }
+            }
+        }
+        function updateGameSpeed() {
+            clearInterval(gameLoopInterval);
+            const newSpeed = speeds[currentLevel - 1];
+            gameLoopInterval = setInterval(update, newSpeed);
+        }
+        function update() {
+            if (nextDirection) { direction = nextDirection; }
+            const head = { x: snake[0].x, y: snake[0].y };
+            switch (direction) {
+                case 'up': head.y--; break;
+                case 'down': head.y++; break;
+                case 'left': head.x--; break;
+                case 'right': head.x++; break;
+            }
+            if (head.x < 0 || head.x >= tileCount || head.y < 0 || head.y >= tileCount || snake.some(seg => seg.x === head.x && seg.y === head.y)) {
+                endGame();
+                return;
+            }
+            snake.unshift(head);
+            let eatenAppleIndex = -1;
+            food.forEach((apple, index) => {
+                if (head.x === apple.x && head.y === apple.y) {
+                    eatenAppleIndex = index;
+                }
+            });
+            if (eatenAppleIndex > -1) {
+                score++;
+                scoreElement.textContent = score;
+                food.splice(eatenAppleIndex, 1);
+                generateApples();
+                const newLevel = Math.min(maxLevel, Math.floor(score / scorePerLevel) + 1);
+                if (newLevel > currentLevel) {
+                    currentLevel = newLevel;
+                    speedSlider.value = currentLevel;
+                    updateGameSpeed();
+                }
+            } else {
+                snake.pop();
+            }
+            drawGame();
+        }
+        function endGame() {
+            clearInterval(gameLoopInterval);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'white';
+            ctx.font = `${gridSize * 2.5}px "Courier New"`;
+            ctx.textAlign = 'center';
+            ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2);
+            replayButton.style.display = 'block';
+        }
+        function handleKeyPress(e) {
+            if (countdownActive) return;
+            if (!gameStarted) { startGame(); return; }
+            const key = e.key.toLowerCase();
+            if ((key === 'arrowup' || key === 'z' || key === 'w') && direction !== 'down') nextDirection = 'up';
+            if ((key === 'arrowdown' || key === 's') && direction !== 'up') nextDirection = 'down';
+            if ((key === 'arrowleft' || key === 'q' || key === 'a') && direction !== 'right') nextDirection = 'left';
+            if ((key === 'arrowright' || key === 'd') && direction !== 'left') nextDirection = 'right';
+        }
+        function startGame() {
+            if (gameStarted) return;
+            gameStarted = true;
+            countdownActive = true;
+            currentLevel = parseInt(speedSlider.value, 10);
+            numApples = parseInt(appleSlider.value, 10);
+            speedSlider.disabled = true;
+            appleSlider.disabled = true;
+            generateApples();
+            let countdown = 3;
+            const countdownInterval = setInterval(() => {
+                drawGame();
+                if (countdown > 0) {
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.fillStyle = 'white';
+                    ctx.font = `${gridSize * 7}px "Courier New"`;
+                    ctx.textAlign = 'center';
+                    ctx.fillText(countdown, canvas.width / 2, canvas.height / 2 + gridSize * 2);
+                    countdown--;
+                } else {
+                    clearInterval(countdownInterval);
+                    countdownActive = false;
+                    updateGameSpeed();
+                }
+            }, 1000);
+        }
+        function resetGame() {
+            replayButton.style.display = 'none';
+            speedSlider.disabled = false;
+            appleSlider.disabled = false;
+            initGameVariables();
+            resizeCanvas();
+        }
+        function setupTouchControls() {
+            const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+            if (!isTouchDevice) return;
+            document.getElementById('touch-controls').style.display = 'block';
+            const up = document.getElementById('touch-up'), down = document.getElementById('touch-down'), left = document.getElementById('touch-left'), right = document.getElementById('touch-right');
+            const handleTouch = (e, newDirection) => {
+                e.preventDefault();
+                if (countdownActive) return;
+                if (!gameStarted) startGame();
+                if (newDirection === 'up' && direction !== 'down') nextDirection = 'up';
+                if (newDirection === 'down' && direction !== 'up') nextDirection = 'down';
+                if (newDirection === 'left' && direction !== 'right') nextDirection = 'left';
+                if (newDirection === 'right' && direction !== 'left') nextDirection = 'right';
+            }
+            up.addEventListener('touchstart', (e) => handleTouch(e, 'up'), { passive: false });
+            down.addEventListener('touchstart', (e) => handleTouch(e, 'down'), { passive: false });
+            left.addEventListener('touchstart', (e) => handleTouch(e, 'left'), { passive: false });
+            right.addEventListener('touchstart', (e) => handleTouch(e, 'right'), { passive: false });
+        }
 
-        // --- Le reste des fonctions (update, endGame, etc.) reste le même ---
-        
-        // --- Setup et Lancement ---
-        window.addEventListener('resize', resizeCanvas); // Écoute les changements de taille
+        window.addEventListener('resize', resizeCanvas);
         document.addEventListener('keydown', handleKeyPress);
         replayButton.addEventListener('click', resetGame);
         
         initGameVariables();
-        resizeCanvas(); // Appelle la fonction une fois au début
+        resizeCanvas();
         setupTouchControls();
-        
-        // --- Fonctions complètes (certaines inchangées ou compactées pour la lisibilité) ---
-        function drawStartScreen(){ctx.fillStyle='black';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle='white';ctx.font=`${gridSize*1.5}px "Courier New"`;ctx.textAlign='center';ctx.fillText('Appuyez sur une touche',canvas.width/2,canvas.height/2);ctx.fillText('pour commencer',canvas.width/2,canvas.height/2+gridSize*2)}
-        function drawGrid(){ctx.strokeStyle='rgba(255,255,255,0.1)';for(let i=0;i<tileCount;i++){for(let j=0;j<tileCount;j++){ctx.strokeRect(i*gridSize,j*gridSize,gridSize,gridSize)}}}
-        function drawSnake(){snake.forEach((segment,index)=>{ctx.fillStyle='lime';const x=segment.x*gridSize;const y=segment.y*gridSize;ctx.fillRect(x,y,gridSize,gridSize);if(index===0){ctx.beginPath();let arcX=x+gridSize/2,arcY=y+gridSize/2,startAngle=0,endAngle=0;if(direction==='right'){arcX=x+gridSize;startAngle=-Math.PI/2;endAngle=Math.PI/2}else if(direction==='left'){arcX=x;startAngle=Math.PI/2;endAngle=-Math.PI/2}else if(direction==='up'){arcY=y;startAngle=Math.PI;endAngle=0}else if(direction==='down'){arcY=y+gridSize;startAngle=0;endAngle=Math.PI}
-ctx.arc(arcX,arcY,gridSize/2,startAngle,endAngle);ctx.fill();const centerX=x+gridSize/2;const centerY=y+gridSize/2;ctx.fillStyle='black';const eyeOffset=gridSize/4;const eyeDist=gridSize/5;let eye1X,eye1Y,eye2X,eye2Y;if(direction==='right'){eye1X=centerX+eyeDist;eye1Y=centerY-eyeOffset;eye2X=centerX+eyeDist;eye2Y=centerY+eyeOffset}else if(direction==='left'){eye1X=centerX-eyeDist;eye1Y=centerY-eyeOffset;eye2X=centerX-eyeDist;eye2Y=centerY+eyeOffset}else if(direction==='up'){eye1X=centerX-eyeOffset;eye1Y=centerY-eyeDist;eye2X=centerX+eyeOffset;eye2Y=centerY-eyeDist}else{eye1X=centerX-eyeOffset;eye1Y=centerY+eyeDist;eye2X=centerX+eyeOffset;eye2Y=centerY+eyeDist}
-ctx.beginPath();ctx.arc(eye1X,eye1Y,3,0,2*Math.PI);ctx.arc(eye2X,eye2Y,3,0,2*Math.PI);ctx.fill();ctx.strokeStyle='red';ctx.lineWidth=3;ctx.beginPath();const tongueLength=gridSize/4;let startX,startY,midX,midY,tip1X,tip1Y,tip2X,tip2Y;const tongueOffset=gridSize/2+2;if(direction==='right'){startX=centerX+tongueOffset;startY=centerY;midX=startX+tongueLength/2;midY=startY;tip1X=midX+5;tip1Y=midY-5;tip2X=midX+5;tip2Y=midY+5}else if(direction==='left'){startX=centerX-tongueOffset;startY=centerY;midX=startX-tongueLength/2;midY=startY;tip1X=midX-5;tip1Y=midY-5;tip2X=midX-5;tip2Y=midY+5}else if(direction==='up'){startX=centerX;startY=centerY-tongueOffset;midX=startX;midY=startY-tongueLength/2;tip1X=midX-5;tip1Y=midY-5;tip2X=midX+5;tip2Y=midY-5}else{startX=centerX;startY=centerY+tongueOffset;midX=startX;midY=startY+tongueLength/2;tip1X=midX-5;tip1Y=midY+5;tip2X=midX+5;tip2Y=midY+5}
-ctx.moveTo(startX,startY);ctx.lineTo(midX,midY);ctx.lineTo(tip1X,tip1Y);ctx.moveTo(midX,midY);ctx.lineTo(tip2X,tip2Y);ctx.stroke()}
-if(index===snake.length-1&&snake.length>1){const prevSegment=snake[index-1];ctx.beginPath();let arcX=x+gridSize/2,arcY=y+gridSize/2;if(prevSegment.x>segment.x){arcX=x;startAngle=Math.PI/2;endAngle=-Math.PI/2}else if(prevSegment.x<segment.x){arcX=x+gridSize;startAngle=-Math.PI/2;endAngle=Math.PI/2}else if(prevSegment.y>segment.y){arcY=y;startAngle=Math.PI;endAngle=0}else if(prevSegment.y<segment.y){arcY=y+gridSize;startAngle=0;endAngle=Math.PI}
-ctx.arc(arcX,arcY,gridSize/2,startAngle,endAngle);ctx.fill()}})}
-function generateApples(){while(food.length<numApples){let newApple={x:Math.floor(Math.random()*tileCount),y:Math.floor(Math.random()*tileCount)};const onSnake=snake.some(seg=>seg.x===newApple.x&&seg.y===newApple.y);const onFood=food.some(f=>f.x===newApple.x&&f.y===newApple.y);if(!onSnake&&!onFood){food.push(newApple)}}}
-function updateGameSpeed(){clearInterval(gameLoopInterval);const newSpeed=speeds[currentLevel-1];gameLoopInterval=setInterval(update,newSpeed)}
-function update(){if(nextDirection){direction=nextDirection}
-const head={x:snake[0].x,y:snake[0].y};switch(direction){case'up':head.y--;break;case'down':head.y++;break;case'left':head.x--;break;case'right':head.x++;break}
-if(head.x<0||head.x>=tileCount||head.y<0||head.y>=tileCount||snake.some(seg=>seg.x===head.x&&seg.y===head.y)){endGame();return}
-snake.unshift(head);let eatenAppleIndex=-1;food.forEach((apple,index)=>{if(head.x===apple.x&&head.y===apple.y){eatenAppleIndex=index}});if(eatenAppleIndex>-1){score++;scoreElement.textContent=score;food.splice(eatenAppleIndex,1);generateApples();const newLevel=Math.min(maxLevel,Math.floor(score/scorePerLevel)+1);if(newLevel>currentLevel){currentLevel=newLevel;speedSlider.value=currentLevel;updateGameSpeed()}}else{snake.pop()}
-drawGame()}
-function endGame(){clearInterval(gameLoopInterval);ctx.fillStyle='rgba(0,0,0,0.7)';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle='white';ctx.font=`${gridSize*2.5}px "Courier New"`;ctx.textAlign='center';ctx.fillText('GAME OVER',canvas.width/2,canvas.height/2);replayButton.style.display='block'}
-function handleKeyPress(e){if(countdownActive)return;if(!gameStarted){startGame();return}
-const key=e.key.toLowerCase();if((key==='arrowup'||key==='z'||key==='w')&&direction!=='down')nextDirection='up';if((key==='arrowdown'||key==='s')&&direction!=='up')nextDirection='down';if((key==='arrowleft'||key==='q'||key==='a')&&direction!=='right')nextDirection='left';if((key==='arrowright'||key==='d')&&direction!=='left')nextDirection='right'}
-function startGame(){if(gameStarted)return;gameStarted=true;countdownActive=true;currentLevel=parseInt(speedSlider.value,10);numApples=parseInt(appleSlider.value,10);speedSlider.disabled=true;appleSlider.disabled=true;generateApples();let countdown=3;const countdownInterval=setInterval(()=>{drawGame();if(countdown>0){ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle='white';ctx.font=`${gridSize*7}px "Courier New"`;ctx.textAlign='center';ctx.fillText(countdown,canvas.width/2,canvas.height/2+gridSize*2);countdown--}else{clearInterval(countdownInterval);countdownActive=false;updateGameSpeed()}},1000)}
-function resetGame(){replayButton.style.display='none';speedSlider.disabled=false;appleSlider.disabled=false;initGameVariables();resizeCanvas()}
-function setupTouchControls(){const isTouchDevice=('ontouchstart'in window)||(navigator.maxTouchPoints>0);if(!isTouchDevice)return;document.getElementById('touch-controls').style.display='block';const up=document.getElementById('touch-up');const down=document.getElementById('touch-down');const left=document.getElementById('touch-left');const right=document.getElementById('touch-right');const handleTouch=(e,newDirection)=>{e.preventDefault();if(countdownActive)return;if(!gameStarted)startGame();if(newDirection==='up'&&direction!=='down')nextDirection='up';if(newDirection==='down'&&direction!=='up')nextDirection='down';if(newDirection==='left'&&direction!=='right')nextDirection='left';if(newDirection==='right'&&direction!=='left')nextDirection='right'}
-up.addEventListener('touchstart',(e)=>handleTouch(e,'up'),{passive:false});down.addEventListener('touchstart',(e)=>handleTouch(e,'down'),{passive:false});left.addEventListener('touchstart',(e)=>handleTouch(e,'left'),{passive:false});right.addEventListener('touchstart',(e)=>handleTouch(e,'right'),{passive:false})}
     </script>
 </body>
 </html>
