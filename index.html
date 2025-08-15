@@ -40,39 +40,96 @@
         const scoreElement = document.getElementById('score');
 
         const gridSize = 20;
+        const tileCount = canvas.width / gridSize;
+
+        // État du jeu
         let snake = [{ x: 10, y: 10 }];
         let food = {};
         let direction = 'right';
         let score = 0;
-        let gameOver = false;
-        let speed = 150; // Millisecondes - plus bas = plus rapide
+        let gameStarted = false;
+        let gameLoopInterval;
 
-        function generateFood() {
-            food = {
-                x: Math.floor(Math.random() * (canvas.width / gridSize)),
-                y: Math.floor(Math.random() * (canvas.height / gridSize))
-            };
-        }
-
-        function draw() {
-            // Fond
+        // Dessine l'écran de démarrage
+        function drawStartScreen() {
             ctx.fillStyle = 'black';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'white';
+            ctx.font = '24px "Courier New"';
+            ctx.textAlign = 'center';
+            ctx.fillText('Appuyez sur une touche', canvas.width / 2, canvas.height / 2);
+            ctx.fillText('pour commencer', canvas.width / 2, canvas.height / 2 + 30);
+        }
+        
+        // Dessine la grille de fond
+        function drawGrid() {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)'; // Grille blanche très transparente
+            for (let i = 0; i < tileCount; i++) {
+                for (let j = 0; j < tileCount; j++) {
+                    ctx.strokeRect(i * gridSize, j * gridSize, gridSize, gridSize);
+                }
+            }
+        }
+        
+        // Dessine un segment arrondi du serpent
+        function drawRoundedRect(x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        function drawGame() {
+            // Fond noir
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Grille
+            drawGrid();
+
+            // Nourriture (pomme ronde)
+            ctx.fillStyle = 'red';
+            ctx.beginPath();
+            ctx.arc(food.x * gridSize + gridSize / 2, food.y * gridSize + gridSize / 2, gridSize / 2, 0, 2 * Math.PI);
+            ctx.fill();
 
             // Serpent
             ctx.fillStyle = 'lime';
-            snake.forEach(segment => {
-                ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize, gridSize);
+            snake.forEach((segment, index) => {
+                const x = segment.x * gridSize;
+                const y = segment.y * gridSize;
+                
+                // La tête et la queue sont arrondies
+                if (index === 0 || index === snake.length - 1) {
+                    drawRoundedRect(x, y, gridSize, gridSize, 5);
+                } else {
+                    ctx.fillRect(x, y, gridSize, gridSize);
+                }
             });
-
-            // Nourriture
-            ctx.fillStyle = 'red';
-            ctx.fillRect(food.x * gridSize, food.y * gridSize, gridSize, gridSize);
+        }
+        
+        function generateFood() {
+            food = {
+                x: Math.floor(Math.random() * tileCount),
+                y: Math.floor(Math.random() * tileCount)
+            };
+            // Évite que la nourriture apparaisse sur le serpent
+            snake.forEach(segment => {
+                if (segment.x === food.x && segment.y === food.y) {
+                    generateFood();
+                }
+            });
         }
 
         function update() {
-            if (gameOver) return;
-
             const head = { x: snake[0].x, y: snake[0].y };
 
             switch (direction) {
@@ -82,18 +139,10 @@
                 case 'right': head.x++; break;
             }
 
-            // Collision avec les murs
-            if (head.x < 0 || head.x * gridSize >= canvas.width || head.y < 0 || head.y * gridSize >= canvas.height) {
+            // Collision avec les murs ou soi-même
+            if (head.x < 0 || head.x >= tileCount || head.y < 0 || head.y >= tileCount || snake.some(seg => seg.x === head.x && seg.y === head.y)) {
                 endGame();
                 return;
-            }
-            
-            // Collision avec soi-même
-            for (let i = 1; i < snake.length; i++) {
-                if (head.x === snake[i].x && head.y === snake[i].y) {
-                    endGame();
-                    return;
-                }
             }
 
             snake.unshift(head);
@@ -107,27 +156,42 @@
                 snake.pop();
             }
 
-            draw();
+            drawGame();
         }
         
         function endGame() {
-            gameOver = true;
+            clearInterval(gameLoopInterval); // Arrête le jeu
             ctx.fillStyle = 'white';
             ctx.font = '40px "Courier New"';
             ctx.textAlign = 'center';
             ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2);
         }
 
-        document.addEventListener('keydown', e => {
+        function handleKeyPress(e) {
             const key = e.key;
-            if (key === 'ArrowUp' && direction !== 'down') direction = 'up';
-            if (key === 'ArrowDown' && direction !== 'up') direction = 'down';
-            if (key === 'ArrowLeft' && direction !== 'right') direction = 'left';
-            if (key === 'ArrowRight' && direction !== 'left') direction = 'right';
-        });
+            if (!gameStarted) {
+                startGame();
+                return;
+            }
 
-        generateFood();
-        setInterval(update, speed);
+            if ((key === 'ArrowUp' || key.toLowerCase() === 'w') && direction !== 'down') direction = 'up';
+            if ((key === 'ArrowDown' || key.toLowerCase() === 's') && direction !== 'up') direction = 'down';
+            if ((key === 'ArrowLeft' || key.toLowerCase() === 'a') && direction !== 'left') direction = 'left';
+            if ((key === 'ArrowRight' || key.toLowerCase() === 'd') && direction !== 'right') direction = 'right';
+        }
+        
+        function startGame() {
+            if (gameStarted) return;
+            gameStarted = true;
+            generateFood();
+            gameLoopInterval = setInterval(update, 150); // Boucle principale du jeu
+        }
+
+        // Écouteur d'événement pour démarrer le jeu
+        document.addEventListener('keydown', handleKeyPress);
+        
+        // Afficher l'écran de démarrage au chargement
+        drawStartScreen();
 
     </script>
 </body>
