@@ -123,7 +123,7 @@
         const wrapper = document.getElementById('game-wrapper');
         const tileCount = 22;
         let gridSize; 
-
+        
         const scoreElement = document.getElementById('score');
         const speedSlider = document.getElementById('speedSlider');
         const appleSlider = document.getElementById('appleSlider');
@@ -173,30 +173,20 @@
         
         function drawSnake() {
             snake.forEach((segment, index) => {
-                ctx.fillStyle = '#6495ED'; // Couleur bleue
-
+                ctx.fillStyle = '#6495ED';
                 const x = segment.x * gridSize;
                 const y = segment.y * gridSize;
-
                 ctx.fillRect(x, y, gridSize, gridSize);
-                
-                if (index === 0) { // Tête
+                if (index === 0) {
                     ctx.beginPath();
                     let arcX = x + gridSize / 2, arcY = y + gridSize / 2;
                     if (direction === 'right') { arcX = x + gridSize; } else if (direction === 'left') { arcX = x; }
                     else if (direction === 'up') { arcY = y; } else if (direction === 'down') { arcY = y + gridSize; }
-                    
-                    if(direction === 'up' || direction === 'down'){
-                         ctx.arc(arcX, arcY, gridSize / 2, direction === 'up' ? Math.PI : 0, direction === 'up' ? 0 : Math.PI);
-                    } else {
-                         ctx.arc(arcX, arcY, gridSize / 2, direction === 'left' ? Math.PI/2 : -Math.PI/2, direction === 'left' ? -Math.PI/2 : Math.PI/2);
-                    }
+                    if(direction === 'up' || direction === 'down'){ ctx.arc(arcX, arcY, gridSize / 2, direction === 'up' ? Math.PI : 0, direction === 'up' ? 0 : Math.PI); } 
+                    else { ctx.arc(arcX, arcY, gridSize / 2, direction === 'left' ? Math.PI/2 : -Math.PI/2, direction === 'left' ? -Math.PI/2 : Math.PI/2); }
                     ctx.fill();
-
                     const centerX = x + gridSize / 2;
                     const centerY = y + gridSize / 2;
-                    
-                    // Yeux blancs
                     ctx.fillStyle = 'white';
                     const eyeRadius = Math.max(1.5, gridSize / 12);
                     let eye1X, eye1Y, eye2X, eye2Y;
@@ -210,16 +200,12 @@
                     ctx.arc(eye1X, eye1Y, eyeRadius, 0, 2 * Math.PI);
                     ctx.arc(eye2X, eye2Y, eyeRadius, 0, 2 * Math.PI);
                     ctx.fill();
-
-                    // Pupilles noires
                     ctx.fillStyle = 'black';
-                    const pupilRadius = eyeRadius / 1.5;
+                    const pupilRadius = eyeRadius * 0.6;
                     ctx.beginPath();
                     ctx.arc(eye1X, eye1Y, pupilRadius, 0, 2 * Math.PI);
                     ctx.arc(eye2X, eye2Y, pupilRadius, 0, 2 * Math.PI);
                     ctx.fill();
-
-                    // Langue
                     ctx.strokeStyle = 'red';
                     ctx.lineWidth = Math.max(1, gridSize / 15);
                     ctx.beginPath();
@@ -235,18 +221,14 @@
                     ctx.moveTo(midX, midY); ctx.lineTo(tip2X, tip2Y);
                     ctx.stroke();
                 }
-                if (index === snake.length - 1 && snake.length > 1) { // Queue
+                if (index === snake.length - 1 && snake.length > 1) {
                     const prevSegment = snake[index - 1];
                     ctx.beginPath();
                     let arcX = x + gridSize / 2, arcY = y + gridSize / 2;
                     if (prevSegment.x > segment.x) { arcX = x; } else if (prevSegment.x < segment.x) { arcX = x + gridSize; }
                     else if (prevSegment.y > segment.y) { arcY = y; } else if (prevSegment.y < segment.y) { arcY = y + gridSize; }
-                    
-                    if(segment.y !== prevSegment.y){
-                        ctx.arc(arcX, arcY, gridSize / 2, segment.y > prevSegment.y ? Math.PI : 0, segment.y > prevSegment.y ? 0 : Math.PI);
-                    } else {
-                        ctx.arc(arcX, arcY, gridSize / 2, segment.x > prevSegment.x ? Math.PI/2 : -Math.PI/2, segment.x > prevSegment.x ? -Math.PI/2 : Math.PI/2);
-                    }
+                    if(segment.y !== prevSegment.y){ ctx.arc(arcX, arcY, gridSize / 2, segment.y > prevSegment.y ? Math.PI : 0, segment.y > prevSegment.y ? 0 : Math.PI); } 
+                    else { ctx.arc(arcX, arcY, gridSize / 2, segment.x > prevSegment.x ? Math.PI/2 : -Math.PI/2, segment.x > prevSegment.x ? -Math.PI/2 : Math.PI/2); }
                     ctx.fill();
                 }
             });
@@ -298,11 +280,41 @@ const key=e.key.toLowerCase();if((key==='arrowup'||key==='z'||key==='w')&&direct
         function setupTouchControls(){const isTouchDevice=('ontouchstart'in window)||(navigator.maxTouchPoints>0);if(!isTouchDevice)return;document.getElementById('touch-controls').style.display='block';const up=document.getElementById('touch-up'),down=document.getElementById('touch-down'),left=document.getElementById('touch-left'),right=document.getElementById('touch-right');const handleTouch=(e,newDirection)=>{e.preventDefault();if(countdownActive)return;if(!gameStarted)startGame();if(newDirection==='up'&&direction!=='down')nextDirection='up';if(newDirection==='down'&&direction!=='up')nextDirection='down';if(newDirection==='left'&&direction!=='right')nextDirection='left';if(newDirection==='right'&&direction!=='left')nextDirection='right'}
 up.addEventListener('touchstart',(e)=>handleTouch(e,'up'),{passive:false});down.addEventListener('touchstart',(e)=>handleTouch(e,'down'),{passive:false});left.addEventListener('touchstart',(e)=>handleTouch(e,'left'),{passive:false});right.addEventListener('touchstart',(e)=>handleTouch(e,'right'),{passive:false})}
 
+        // --- NOUVEAU: Gestion tactile pour les sliders ---
+        function setupSliderTouch() {
+            const sliders = [speedSlider, appleSlider];
+
+            const handleSliderTouch = (e) => {
+                const slider = e.target;
+                // Empêche le scroll de la page pendant qu'on glisse le doigt
+                e.preventDefault();
+
+                // Calcule la nouvelle valeur en fonction de la position du doigt
+                const rect = slider.getBoundingClientRect();
+                const touch = e.touches[0];
+                const touchX = touch.clientX - rect.left;
+                const percent = Math.max(0, Math.min(1, touchX / rect.width));
+                
+                const min = parseFloat(slider.min);
+                const max = parseFloat(slider.max);
+                const range = max - min;
+                
+                const value = Math.round(min + range * percent);
+                slider.value = value;
+            };
+
+            sliders.forEach(slider => {
+                slider.addEventListener('touchstart', handleSliderTouch, { passive: false });
+                slider.addEventListener('touchmove', handleSliderTouch, { passive: false });
+            });
+}
+        
         window.addEventListener('DOMContentLoaded', (event) => {
             initGameVariables();
             resizeCanvas();
             drawStartScreen();
             setupTouchControls();
+            setupSliderTouch(); // Active la gestion tactile des sliders
         });
         window.addEventListener('resize', resizeCanvas);
         document.addEventListener('keydown', handleKeyPress);
