@@ -56,7 +56,7 @@
         }
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none; appearance: none;
-            width: 25px; height: 25px; background: #6495ED; /* Couleur du serpent */
+            width: 25px; height: 25px; background: #6495ED;
             border: 2px solid white; border-radius: 50%; cursor: pointer;
         }
         #appleSlider::-webkit-slider-thumb { background: red; }
@@ -174,17 +174,12 @@
         function drawSnake() {
             snake.forEach((segment, index) => {
                 ctx.fillStyle = '#6495ED'; // Couleur bleue
-                ctx.strokeStyle = 'white'; // Couleur du contour
-                ctx.lineWidth = Math.max(1, gridSize / 20); // Épaisseur proportionnelle du contour
 
                 const x = segment.x * gridSize;
                 const y = segment.y * gridSize;
 
-                // Dessine la base carrée avec son contour
                 ctx.fillRect(x, y, gridSize, gridSize);
-                ctx.strokeRect(x, y, gridSize, gridSize);
                 
-                // Dessine les parties arrondies (tête et queue)
                 if (index === 0) { // Tête
                     ctx.beginPath();
                     let arcX = x + gridSize / 2, arcY = y + gridSize / 2;
@@ -197,18 +192,16 @@
                          ctx.arc(arcX, arcY, gridSize / 2, direction === 'left' ? Math.PI/2 : -Math.PI/2, direction === 'left' ? -Math.PI/2 : Math.PI/2);
                     }
                     ctx.fill();
-                    ctx.stroke();
 
-                    // Dessine les yeux et la langue par-dessus
                     const centerX = x + gridSize / 2;
                     const centerY = y + gridSize / 2;
                     
-                    // Yeux
+                    // Yeux blancs
                     ctx.fillStyle = 'white';
-                    const eyeOffset = gridSize / 4;
-                    const eyeDist = gridSize / 5;
                     const eyeRadius = Math.max(1.5, gridSize / 12);
                     let eye1X, eye1Y, eye2X, eye2Y;
+                    const eyeOffset = gridSize / 4;
+                    const eyeDist = gridSize / 5;
                     if (direction === 'right') { eye1X = centerX + eyeDist; eye1Y = centerY - eyeOffset; eye2X = centerX + eyeDist; eye2Y = centerY + eyeOffset; }
                     else if (direction === 'left') { eye1X = centerX - eyeDist; eye1Y = centerY - eyeOffset; eye2X = centerX - eyeDist; eye2Y = centerY + eyeOffset; }
                     else if (direction === 'up') { eye1X = centerX - eyeOffset; eye1Y = centerY - eyeDist; eye2X = centerX + eyeOffset; eye2Y = centerY - eyeDist; }
@@ -216,6 +209,14 @@
                     ctx.beginPath();
                     ctx.arc(eye1X, eye1Y, eyeRadius, 0, 2 * Math.PI);
                     ctx.arc(eye2X, eye2Y, eyeRadius, 0, 2 * Math.PI);
+                    ctx.fill();
+
+                    // Pupilles noires
+                    ctx.fillStyle = 'black';
+                    const pupilRadius = eyeRadius / 2;
+                    ctx.beginPath();
+                    ctx.arc(eye1X, eye1Y, pupilRadius, 0, 2 * Math.PI);
+                    ctx.arc(eye2X, eye2Y, pupilRadius, 0, 2 * Math.PI);
                     ctx.fill();
 
                     // Langue
@@ -247,7 +248,6 @@
                         ctx.arc(arcX, arcY, gridSize / 2, segment.x > prevSegment.x ? Math.PI/2 : -Math.PI/2, segment.x > prevSegment.x ? -Math.PI/2 : Math.PI/2);
                     }
                     ctx.fill();
-                    ctx.stroke();
                 }
             });
         }
