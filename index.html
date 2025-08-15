@@ -29,7 +29,6 @@
         canvas {
             width: 100%;
             height: 100%;
-            background-color: #000;
             border: 2px solid #555;
             box-sizing: border-box;
             image-rendering: pixelated;
@@ -57,7 +56,7 @@
         }
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none; appearance: none;
-            width: 25px; height: 25px; background: #6495ED;
+            width: 25px; height: 25px; background: lime;
             border: 2px solid white; border-radius: 50%; cursor: pointer;
         }
         #appleSlider::-webkit-slider-thumb { background: red; }
@@ -124,28 +123,6 @@
         const wrapper = document.getElementById('game-wrapper');
         const tileCount = 22;
         let gridSize; 
-        
-        const textures = {
-            apple: new Image(), head_up: new Image(), head_down: new Image(), head_left: new Image(), head_right: new Image(),
-            tail_up: new Image(), tail_down: new Image(), tail_left: new Image(), tail_right: new Image(),
-            body_vertical: new Image(), body_horizontal: new Image(),
-            body_topleft: new Image(), body_topright: new Image(), body_bottomleft: new Image(), body_bottomright: new Image()
-        };
-        textures.apple.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAKtJREFUOE+t07ENgzAUhOFvo1RCVESEjBHRgTqgA1B0BGeiQ6ACqpKk7YwHi/0Dac5/cmBLGI8PoPcqhC7g2505cZtPlZGAgI/pM82kTCGgvRHgZk1sA5Mv2wI+v/MNT7/d5y/a+Y/qjW2B5z/D4wYskb4sY8A2Gfs5JIAuM1K1f0DkTy3jgA7j5b2/gGXK5Z1xATB5u1f4/d4wO2N7APe8bQt4Bvz/L6D/gH8A/wD+gB9iXwB/AHz/f0BvK4C2E0A7L4B2D/D6pfEDvIBoQ2G6AAAAAElFTSuQmCC';
-        textures.head_up.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA0AAAAQCAYAAADNo/U5AAAAAXNSR0IArs4c6QAAAHhJREFUOE9jZKAQMJKkof///yM1MHgBifF/gqA8iG/g4ubz+/9/QhISGgM1cQCk/0+i/r/p/78Z/L8B6T8T//+f+M9k4P9/Nv//P/B/gPF/Dvj/X8L/gKz/T6T+P7D9fwD5/xP9/5/h/8+A/z8T/h/g//9f+P/fC//39GC4DgMAm4A+Vv0BwYkAAAAASUVORK5CYII=';
-        textures.head_down.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA0AAAAQCAYAAADNo/U5AAAAAXNSR0IArs4c6QAAAHBJREFUOE9jZKAQMFKonvEfl/H/JxISEsIIFeIIFGAiKkxfgKT/T6T+v2n+/5/B/z8D+f8T/f+f4f/PgP8/E/4f4P//X/j/3wv/9/QB5P9P9P9/hv8/A/7/TIRfYIY4QgFp/xPp/5/m/4/+/w//9wAAVdM/c0l/pWAAAAAASUVORK5CYII=';
-        textures.head_left.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAANCAYAAACgu+4kAAAAAXNSR0IArs4c6QAAAIlJREFUOE9jZKAQMJKkof///6M0A5+BgZkE8X8gE/+AmYGFgZkE+f8Tqf9fkv//M/z/WST8/xnx/2fA/58J/38G/P8Pif8fmfj/PzP//z/h/8/4//8X/u/vQf7/hKT/T6L+P9P//xmYGBgZkP8/kYGBCca/RBr/M1kYAGoMAODrPxR1b9hDAAAAAElFTSuQmCC';
-        textures.head_right.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAANCAYAAACgu+4kAAAAAXNSR0IArs4c6QAAAIdJREFUOE9jZKAQMJKkof///yM1MAb+M/z/WST8/xnx/2fA/58J/38G/P8Pif8fmfj/PzP//z/h/8/4//8X/u/vA4MBNgYjMPz/P5GBgQnGv0QajM3gAyKk/0+i/r/p/v+M3Ab+gZkZkP8/kYGBCSYD/4BM/AFmBiYAABhPP0/vVwW3AAAAAElFTSuQmCC';
-        textures.tail_up.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAcAAAAMCAYAAACulacQAAAAAXNSR0IArs4c6QAAADhJREFUOE9jZEAD////Gf7//z/BwMCYwIqBicGCgYnhhIGJ4ZeBiSGf4R+X8f//MgBJAABeXh8K5B4yXgAAAABJRU5ErkJggg==';
-        textures.tail_down.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAcAAAAMCAYAAACulacQAAAAAXNSR0IArs4c6QAAADFJREFUOE9jZCAD////M/xH5fz/fxYDAwNjAisGJgYLBiaGEwYmhncGJgYhDAwMzAAkAQB35R4K+j/bAAAAAElFTSuQmCC';
-        textures.tail_left.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAHCAYAAAA8T9gOAAAAAXNSR0IArs4c6QAAADhJREFUOE9jZEAD////Gf7//z/BwMDYgJVAxODHQMTgx0DE4MdAxODEQMTg5wz/kfz//////w+TAUgCAF2XHwo3bBw+AAAAAElFTSuQmCC';
-        textures.tail_right.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAHCAYAAAA8T9gOAAAAAXNSR0IArs4c6QAAADZJREFUOE9jZCAD////M/xH5fz/fxYDA2MDKwYnBicGJwYnBicGJwYnhicG5wz/kfz//z8lAJAFAFh7Hwpfe9MTAAAAAElFTSuQmCC';
-        textures.body_vertical.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAQCAYAAADXnxW3AAAAAXNSR0IArs4c6QAAAA5JREFUOE9j+A+FL/4PBgAJAgP+4W25aAAAAABJRU5ErkJggg==';
-        textures.body_horizontal.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAABCAYAAAD4Xf8/AAAAAXNSR0IArs4c6QAAAA5JREFUOE9j+A+Ff/4PBgAJAgP+iL0KdgAAAABJRU5ErkJggg==';
-        textures.body_topleft.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAAAXNSR0IArs4c6QAAAD9JREFUOE9jZEAD////hv///w8YgJVAxODHQMTgx0DE4MdAxODEQMTgx0DE4MdAxODEwMTg5wz/kfz/Px5kAxQDAN7jKBUA3EaJAAAAAElFTSuQmCC';
-        textures.body_topright.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAAAXNSR0IArs4c6QAAAD5JREFUOE9jZCAD////hv///w8YgJVAxODEQMTgx0DE4MdAxODEQMTgx0DE4MdAxODEQMTg5wz/kfz/P5UEUgwAAGYFKBU6L22VAAAAAElFTSuQmCC';
-        textures.body_bottomleft.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAAAXNSR0IArs4c6QAAAEFJREFUOE9jZEAD////hv///w8YgJVAxODHQMTgx0DE4MdAxODEQMTgx0DE4MdAxODEQMTg5wz/kfz/Pw9yA5sBSQAAe2IpCgC4/xAAAAAASUVORK5CYII=';
-        textures.body_bottomright.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAAAXNSR0IArs4c6QAAAD9JREFUOE9jZCAD////hv///w8YgJVAxODEQMTgx0DE4MdAxODEQMTgx0DE4MdAxODEQMTg5wz/kfz/P5UE2wxIAgBc3ikV++fPtgAAAABJRU5ErkJggg==';
 
         const scoreElement = document.getElementById('score');
         const speedSlider = document.getElementById('speedSlider');
@@ -195,62 +172,60 @@
         }
         
         function drawSnake() {
-            if (!snake || snake.length === 0) return;
-
-            // Utilise une boucle 'for' simple pour plus de clarté et de stabilité
-            for (let i = 0; i < snake.length; i++) {
-                const segment = snake[i];
+            snake.forEach((segment, index) => {
+                ctx.fillStyle = 'lime';
                 const x = segment.x * gridSize;
                 const y = segment.y * gridSize;
-                let texture;
-
-                if (i === 0) { // Tête
-                    if (direction === 'up') texture = textures.head_up;
-                    else if (direction === 'down') texture = textures.head_down;
-                    else if (direction === 'left') texture = textures.head_left;
-                    else if (direction === 'right') texture = textures.head_right;
-                } else if (i === snake.length - 1) { // Queue
-                    const prev = snake[i - 1];
-                    if (segment.y > prev.y) texture = textures.tail_up;
-                    else if (segment.y < prev.y) texture = textures.tail_down;
-                    else if (segment.x > prev.x) texture = textures.tail_left;
-                    else if (segment.x < prev.x) texture = textures.tail_right;
-                } else { // Corps
-                    const prev = snake[i - 1];
-                    const next = snake[i + 1];
-                    if (prev.x === next.x) { // Droit vertical
-                        texture = textures.body_vertical;
-                    } else if (prev.y === next.y) { // Droit horizontal
-                        texture = textures.body_horizontal;
-                    } else { // Virage
-                        if ((prev.y < segment.y && next.x > segment.x) || (prev.x > segment.x && next.y < segment.y)) texture = textures.body_topright;
-                        else if ((prev.y < segment.y && next.x < segment.x) || (prev.x < segment.x && next.y < segment.y)) texture = textures.body_topleft;
-                        else if ((prev.y > segment.y && next.x > segment.x) || (prev.x > segment.x && next.y > segment.y)) texture = textures.body_bottomright;
-                        else if ((prev.y > segment.y && next.x < segment.x) || (prev.x < segment.x && next.y > segment.y)) texture = textures.body_bottomleft;
+                ctx.fillRect(x, y, gridSize, gridSize);
+                if (index === 0) {
+                    ctx.beginPath();
+                    let arcX = x + gridSize / 2, arcY = y + gridSize / 2;
+                    if (direction === 'right') { arcX = x + gridSize; }
+                    else if (direction === 'left') { arcX = x; }
+                    else if (direction === 'up') { arcY = y; }
+                    else if (direction === 'down') { arcY = y + gridSize; }
+                    
+                    if(direction === 'up' || direction === 'down'){
+                         ctx.arc(arcX, arcY, gridSize / 2, direction === 'up' ? Math.PI : 0, direction === 'up' ? 0 : Math.PI);
+                    } else {
+                         ctx.arc(arcX, arcY, gridSize / 2, direction === 'left' ? Math.PI/2 : -Math.PI/2, direction === 'left' ? -Math.PI/2 : Math.PI/2);
                     }
+                    ctx.fill();
                 }
-                if (texture && texture.complete) {
-                    ctx.drawImage(texture, x, y, gridSize, gridSize);
+                if (index === snake.length - 1 && snake.length > 1) {
+                    const prevSegment = snake[index - 1];
+                    ctx.beginPath();
+                    let arcX = x + gridSize / 2, arcY = y + gridSize / 2;
+                    if (prevSegment.x > segment.x) { arcX = x; }
+                    else if (prevSegment.x < segment.x) { arcX = x + gridSize; }
+                    else if (prevSegment.y > segment.y) { arcY = y; }
+                    else if (prevSegment.y < segment.y) { arcY = y + gridSize; }
+
+                    if(segment.y !== prevSegment.y){
+                        ctx.arc(arcX, arcY, gridSize / 2, segment.y > prevSegment.y ? Math.PI : 0, segment.y > prevSegment.y ? 0 : Math.PI);
+                    } else {
+                        ctx.arc(arcX, arcY, gridSize / 2, segment.x > prevSegment.x ? Math.PI/2 : -Math.PI/2, segment.x > prevSegment.x ? -Math.PI/2 : Math.PI/2);
+                    }
+                    ctx.fill();
                 }
-            }
+            });
         }
 
         function drawGame() {
-            // Remplacement du damier par un fond noir simple pour le test
-            ctx.fillStyle = 'black';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
+            drawBackground();
+            ctx.fillStyle = 'red';
             food.forEach(apple => {
-                ctx.drawImage(textures.apple, apple.x * gridSize, apple.y * gridSize, gridSize, gridSize);
+                ctx.beginPath();
+                ctx.arc(apple.x * gridSize + gridSize / 2, apple.y * gridSize + gridSize / 2, gridSize / 2, 0, 2 * Math.PI);
+                ctx.fill();
             });
             drawSnake();
         }
         
         function drawStartScreen(){
-            // Remplacement du damier par un fond noir simple pour le test
-            ctx.fillStyle = 'black';
+            drawBackground();
+            ctx.fillStyle='rgba(0, 0, 0, 0.4)';
             ctx.fillRect(0,0,canvas.width,canvas.height);
-
             ctx.fillStyle='white';
             ctx.font=`${gridSize*1.5}px "Courier New"`;
             ctx.textAlign='center';
@@ -273,7 +248,7 @@ drawGame()}
             ctx.font=`${gridSize*2.5}px "Courier New"`;
             ctx.textAlign='center';
             ctx.fillText('GAME OVER',canvas.width/2,canvas.height/2);
-            replayButton.style.display='block';
+replayButton.style.display='block';
         }
         function handleKeyPress(e){if(countdownActive)return;if(!gameStarted){startGame();return}
 const key=e.key.toLowerCase();if((key==='arrowup'||key==='z'||key==='w')&&direction!=='down')nextDirection='up';if((key==='arrowdown'||key==='s')&&direction!=='up')nextDirection='down';if((key==='arrowleft'||key==='q'||key==='a')&&direction!=='right')nextDirection='left';if((key==='arrowright'||key==='d')&&direction!=='left')nextDirection='right'}
