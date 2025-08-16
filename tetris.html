@@ -37,14 +37,13 @@
             position: relative;
             width: calc(var(--game-height) / 2);
             height: var(--game-height);
-            max-width: 45vw;
+            max-width: 45vh; /* Ratio 1:2 */
             max-height: 90vh;
         }
         canvas {
             width: 100%;
             height: 100%;
             border: 2px solid #555;
-            background-color: #000;
         }
         .sidebar {
             display: flex;
@@ -126,7 +125,7 @@
         @media (min-width: 700px) {
             .page-content {
                 flex-direction: row;
-                align-items: center; /* Centre verticalement le jeu et le panneau */
+                align-items: flex-start; /* Aligne le haut du jeu et le haut du panneau */
                 gap: 30px;
             }
         }
@@ -140,13 +139,14 @@
                 <canvas id="gameCanvas"></canvas>
                 <button id="replayButton">Rejouer</button>
             </div>
-            <div id="touch-controls">
+             <div id="touch-controls">
                 <div id="touch-drop" class="touch-btn">DROP</div>
                 <div id="touch-rotate" class="touch-btn">↻</div>
                 <div id="touch-left" class="touch-btn">←</div>
                 <div id="touch-down" class="touch-btn">↓</div>
                 <div id="touch-right" class="touch-btn">→</div>
             </div>
+             <p style="font-size: 0.9em; margin-top: 15px;">Contrôles : Flèches & ZQSD, Espace pour Drop</p>
         </div>
         <div class="sidebar">
             <div class="info-box">
@@ -333,12 +333,33 @@
                 });
             });
         }
+        
+        function drawGrid() {
+            ctx.strokeStyle = '#303030';
+            ctx.lineWidth = 1;
+            for (let i = 1; i < COLS; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * blockSize, 0);
+                ctx.lineTo(i * blockSize, canvas.height);
+                ctx.stroke();
+            }
+            for (let i = 1; i < ROWS; i++) {
+                ctx.beginPath();
+                ctx.moveTo(0, i * blockSize);
+                ctx.lineTo(canvas.width, i * blockSize);
+                ctx.stroke();
+            }
+        }
 
         function draw() {
-            ctx.fillStyle = '#000';
+            ctx.fillStyle = '#1C1C1C';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
+            drawGrid();
+            
             drawPiece(playfield, {x: 0, y: 0}, ctx, blockSize);
-            if (gameState === 'PLAYING') drawPiece(player.piece, player, ctx, blockSize);
+            if (gameState === 'PLAYING') {
+                drawPiece(player.piece, player, ctx, blockSize);
+            }
             
             nextCtx.fillStyle = '#111';
             nextCtx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
@@ -395,8 +416,10 @@
         }
 
         function handleKeyPress(e) {
-            if (gameState === 'START') { startGame(); return; }
-            if (gameState === 'GAME_OVER') { gameState = 'START'; draw(); return; }
+            if(e.key === 'Enter' && (gameState === 'START' || gameState === 'GAME_OVER')){
+                startGame();
+                return;
+            }
             if (gameState !== 'PLAYING' || countdownActive) return;
 
             if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'q') playerMove(-1);
@@ -417,8 +440,7 @@
             
             const handleTouch = (e, action) => {
                 e.preventDefault();
-                if (gameState === 'START') { startGame(); return; }
-                if (gameState === 'GAME_OVER') { gameState = 'START'; draw(); return; }
+                if (gameState === 'START' || gameState === 'GAME_OVER') { startGame(); return; }
                 if (gameState !== 'PLAYING' || countdownActive) return;
 
                 switch(action) {
@@ -455,9 +477,18 @@
         }
         
         replayButton.addEventListener('click', startGame);
-
-        window.addEventListener('resize', resizeGame);
-        document.addEventListener('keydown', handleKeyPress);
+        
+        function drawStartScreen() {
+            gameState = 'START';
+            draw();
+            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            ctx.fillRect(0,0,canvas.width, canvas.height);
+            ctx.fillStyle = 'white';
+            ctx.font = `${blockSize * 1.5}px "Courier New"`;
+            ctx.textAlign = 'center';
+            ctx.fillText('Appuyez sur Entrée', canvas.width / 2, canvas.height / 2 - blockSize);
+            ctx.fillText('ou touchez l\'écran', canvas.width / 2, canvas.height / 2 + blockSize);
+        }
         
         window.addEventListener('DOMContentLoaded', () => {
             highScore = localStorage.getItem('tetrisHighScore') || 0;
@@ -465,17 +496,13 @@
             drawStartScreen();
             setupTouchControls();
             setupSliderTouch();
+            canvas.addEventListener('click', () => {
+                if (gameState === 'START' || gameState === 'GAME_OVER') startGame();
+            });
         });
-        
-        function drawStartScreen() {
-            gameState = 'START';
-            ctx.fillStyle = '#000';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = 'white';
-            ctx.font = `${blockSize * 1.2}px "Courier New"`;
-            ctx.textAlign = 'center';
-            ctx.fillText('Appuyez pour jouer', canvas.width / 2, canvas.height / 2);
-        }
+
+        window.addEventListener('resize', resizeGame);
+        document.addEventListener('keydown', handleKeyPress);
     </script>
 </body>
 </html>
