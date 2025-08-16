@@ -367,14 +367,26 @@
                 if(nextPiece) {
                     ctx.globalAlpha = 0.7;
                     const nextPieceSize = blockSize * 0.6;
-                    // MODIFICATION : Valeur changée pour coller au bord droit
+                    
+                    // Coordonnée X et Y du texte "NEXT" en pixels
                     const textX = (COLS - 1.2) * blockSize; 
                     const textY = 0.8 * blockSize;
+                    
                     ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
                     ctx.font = `${blockSize * 0.8}px "Courier New"`;
                     ctx.textAlign = 'center';
                     ctx.fillText('NEXT', textX, textY);
-                    drawPiece(nextPiece, {x: (COLS - 1.2) - nextPiece[0].length / 2, y: 1.5}, ctx, nextPieceSize);
+
+                    // --- MODIFICATION : Calcul exact de la position de la pièce ---
+                    
+                    // 1. Position Y : Y du texte + 60 pixels, converti en "unités de bloc"
+                    const pieceY = (textY + 60) / nextPieceSize;
+                    
+                    // 2. Position X : Centrée parfaitement sous le texte, convertie en "unités de bloc"
+                    const pieceX = (textX / nextPieceSize) - (nextPiece[0].length / 2);
+                    
+                    drawPiece(nextPiece, {x: pieceX, y: pieceY}, ctx, nextPieceSize);
+
                     ctx.globalAlpha = 1.0;
                 }
             } else if (gameState === 'ANIMATING') {
