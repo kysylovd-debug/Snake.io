@@ -46,7 +46,6 @@
             height: 100%;
             border: 2px solid #555;
         }
-        /* La sidebar (conteneur des scores) est une colonne par défaut */
         .sidebar {
             display: flex;
             flex-direction: column;
@@ -113,11 +112,10 @@
         #touch-drop { grid-area: 1 / 2 / 2 / 3; }
         #touch-rotate-right { grid-area: 1 / 3 / 2 / 4; font-size: 2em; }
         
-        /* MODIFICATION : Pour les écrans plus larges (tablette, ordinateur) */
         @media (min-width: 768px) {
             .page-content {
-                flex-direction: row;      /* Met le jeu et la sidebar côte à côte */
-                align-items: flex-start;  /* Aligne les deux en haut */
+                flex-direction: row;      
+                align-items: flex-start;  
             }
         }
         
@@ -366,17 +364,17 @@
             if (gameState === 'PLAYING') {
                 drawPiece(player.piece, player, ctx, blockSize);
 
-                // RESTAURATION : Dessin du prochain bloc en transparence sur la grille de jeu
                 if(nextPiece) {
                     ctx.globalAlpha = 0.7;
                     const nextPieceSize = blockSize * 0.6;
-                    const textX = (COLS - 2.5) * blockSize;
-                    const textY = 1.5 * blockSize;
+                    // MODIFICATION : Coordonnées ajustées pour le coin en haut à droite
+                    const textX = (COLS - 2) * blockSize; 
+                    const textY = 0.8 * blockSize;
                     ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
                     ctx.font = `${blockSize * 0.8}px "Courier New"`;
                     ctx.textAlign = 'center';
                     ctx.fillText('NEXT', textX, textY);
-                    drawPiece(nextPiece, {x: (COLS - 2.5) - nextPiece[0].length / 2, y: 2.5}, ctx, nextPieceSize);
+                    drawPiece(nextPiece, {x: (COLS - 2) - nextPiece[0].length / 2, y: 1.5}, ctx, nextPieceSize);
                     ctx.globalAlpha = 1.0;
                 }
             } else if (gameState === 'ANIMATING') {
