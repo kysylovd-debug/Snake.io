@@ -15,7 +15,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-start; /* Aligne en haut */
+            justify-content: flex-start;
             min-height: 100vh;
             margin: 0;
             padding: 20px 0;
@@ -36,16 +36,16 @@
         }
         .game-wrapper {
             position: relative;
-            width: calc(var(--game-height) / 2);
+            /* Ratio mis à jour pour 11x20 */
+            width: calc(var(--game-height) * 11 / 20);
             height: var(--game-height);
-            max-width: 45vh; /* Ratio 1:2 */
-            max-height: 75vh; /* Hauteur réduite pour mobile */
+            max-width: calc(90vh * 11 / 20);
+            max-height: 80vh;
         }
         canvas {
             width: 100%;
             height: 100%;
             border: 2px solid #555;
-            cursor: pointer;
         }
         .sidebar {
             display: flex;
@@ -109,26 +109,21 @@
             width: 60px;
             height: 60px;
         }
-        #touch-left { grid-area: 2 / 1 / 3 / 2; }
-        #touch-down { grid-area: 2 / 2 / 3 / 3; font-size: 2em;}
-        #touch-right { grid-area: 2 / 3 / 3 / 4; font-size: 2em;}
-        #touch-rotate-left { grid-area: 1 / 1 / 2 / 2; font-size: 2em;}
+        #touch-left { grid-area: 2 / 1 / 3 / 2; font-size: 2em; }
+        #touch-down { grid-area: 2 / 2 / 3 / 3; font-size: 2em; }
+        #touch-right { grid-area: 2 / 3 / 3 / 4; font-size: 2em; }
+        #touch-rotate-left { grid-area: 1 / 1 / 2 / 2; font-size: 2em; }
         #touch-drop { grid-area: 1 / 2 / 2 / 3; }
-        #touch-rotate-right { grid-area: 1 / 3 / 2 / 4; font-size: 2em;}
+        #touch-rotate-right { grid-area: 1 / 3 / 2 / 4; font-size: 2em; }
         
-
-        @media (min-width: 700px) {
+        @media (min-width: 768px) {
             .page-content {
                 flex-direction: row;
                 align-items: center;
                 gap: 20px;
             }
-            .sidebar {
-                order: 2;
-            }
-            .game-column {
-                order: 1;
-            }
+            .sidebar { order: 2; }
+            .game-column { order: 1; }
         }
     </style>
 </head>
@@ -148,7 +143,7 @@
                 <div id="touch-down" class="touch-btn">↓</div>
                 <div id="touch-right" class="touch-btn">→</div>
             </div>
-             <p style="font-size: 0.9em; margin-top: 15px;">Clavier : ← → ↓, Espace (Drop) | Souris: Clic G/D (Pivoter)</p>
+             <p class="keyboard-instructions" style="font-size: 0.9em; margin-top: 15px;">Clavier : ← → ↓ (Déplacer), ↑ (Pivoter), Espace (Drop)</p>
         </div>
         <div class="sidebar">
             <div class="info-box">
@@ -179,7 +174,7 @@
         const speedSlider = document.getElementById('speedSlider');
         const replayButton = document.getElementById('replayButton');
 
-        const COLS = 10; const ROWS = 20; let blockSize;
+        const COLS = 11; const ROWS = 20; let blockSize;
 
         const COLORS = [ null, '#33C7DE', '#2A64D9', '#E6994C', '#E6D84C', '#6AE64C', '#A94CE6', '#E64C4C' ];
         const SHAPES = [ [], [[1,1,1,1]], [[2,0,0],[2,2,2]], [[0,0,3],[3,3,3]], [[4,4],[4,4]], [[0,5,5],[5,5,0]], [[0,6,0],[6,6,6]], [[7,7,0],[0,7,7]] ];
@@ -195,7 +190,7 @@
         function resizeGame() {
             const wrapper = document.getElementById('game-wrapper');
             const h = wrapper.clientHeight;
-            const w = h / 2;
+            const w = h * (COLS / ROWS); // Ratio mis à jour
             canvas.height = h; canvas.width = w;
             blockSize = h / ROWS;
             draw();
@@ -231,17 +226,18 @@
         
         function playerRotate(dir) {
             const originalPiece = player.piece;
+            const originalX = player.x;
             const rotated = rotate(player.piece, dir);
-            let offset = 1;
-            
             player.piece = rotated;
+
+            let offset = 1;
             if (isValidMove(player.piece, 0, 0)) return;
             player.x += offset;
             if (isValidMove(player.piece, 0, 0)) return;
             player.x -= offset * 2;
             if (isValidMove(player.piece, 0, 0)) return;
             
-            player.x += offset;
+            player.x = originalX;
             player.piece = originalPiece;
         }
 
@@ -264,11 +260,11 @@
                 while(playfield.length < ROWS) playfield.unshift(Array(COLS).fill(0));
                 score += linesCleared * 10 * linesCleared;
                 level = Math.floor(score / 100) + parseInt(speedSlider.value);
-                dropInterval = 1000 / (level * 1.5);
+                dropInterval = 1000 / level;
             }
         }
         
-        function playerDrop(isSoftDrop = false) {
+        function playerDrop() {
             if (isValidMove(player.piece, 0, 1)) {
                 player.y++;
             } else {
@@ -299,15 +295,16 @@
             const deltaTime = time - lastTime;
             lastTime = time;
             dropCounter += deltaTime;
-            if (dropCounter > dropInterval) {
-                 if (isValidMove(player.piece, 0, 1)) {
+
+            if (!isValidMove(player.piece, 0, 1)) {
+                 placePiece();
+                 clearLines();
+                 playerReset();
+                 if (!isValidMove(player.piece, 0, 0)) gameState = 'GAME_OVER';
+            } else {
+                if (dropCounter > dropInterval) {
                     player.y++;
                     dropCounter = 0;
-                } else {
-                    placePiece();
-                    clearLines();
-                    playerReset();
-                    if (!isValidMove(player.piece, 0, 0)) gameState = 'GAME_OVER';
                 }
             }
         }
@@ -356,12 +353,21 @@
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             drawGrid();
             drawPiece(playfield, {x: 0, y: 0}, ctx, blockSize);
+            
             if (gameState === 'PLAYING') {
                 drawPiece(player.piece, player, ctx, blockSize);
-                // Dessine la pièce suivante en transparence
                 if(nextPiece) {
-                    ctx.globalAlpha = 0.5;
-                    drawPiece(nextPiece, {x: COLS - nextPiece[0].length - 1, y: 1}, ctx, blockSize);
+                    const nextPieceSize = blockSize * 0.7; // Pièce plus petite
+                    const textX = (COLS - 3) * blockSize;
+                    const textY = 1.5 * blockSize;
+
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                    ctx.font = `${blockSize * 0.8}px "Courier New"`;
+                    ctx.textAlign = 'center';
+                    ctx.fillText('NEXT', textX, textY);
+                    
+                    ctx.globalAlpha = 0.7; // 70% transparent
+                    drawPiece(nextPiece, {x: COLS - 3.5, y: 2.5}, ctx, nextPieceSize);
                     ctx.globalAlpha = 1.0;
                 }
             }
@@ -413,11 +419,11 @@
                 return;
             }
             if (gameState !== 'PLAYING' || countdownActive) return;
+            e.preventDefault();
 
             if (e.key === 'ArrowLeft') playerMove(-1);
             else if (e.key === 'ArrowRight') playerMove(1);
             else if (e.key === 'ArrowDown') playerDrop();
-            else if (e.key === 'ArrowUp') playerRotate(1);
             else if (e.key === ' ') { 
                 while(isValidMove(player.piece, 0, 1)) { player.y++; }
                 playerDrop();
@@ -427,17 +433,22 @@
         function handleMouseClick(e) {
             if (gameState !== 'PLAYING' || countdownActive) return;
             e.preventDefault();
-            if (e.button === 0) playerRotate(-1);
-            if (e.button === 2) playerRotate(1);
+            if (e.button === 0) playerRotate(-1); // Clic Gauche
+            if (e.button === 2) playerRotate(1); // Clic Droit
         }
         
         function setupTouchControls() {
             const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+            const instructions = document.querySelector('.keyboard-instructions');
+            
             if(!isTouch) {
                 document.getElementById('touch-controls').style.display = 'none';
+                if(instructions) instructions.style.display = 'block';
                 return;
             }
+            
             document.getElementById('touch-controls').style.display = 'grid';
+            if(instructions) instructions.style.display = 'none';
             
             const handleTouch = (e, action) => {
                 e.preventDefault();
@@ -470,7 +481,7 @@
             ctx.fillStyle = 'rgba(0,0,0,0.7)';
             ctx.fillRect(0,0,canvas.width, canvas.height);
             ctx.fillStyle = 'white';
-            ctx.font = `${blockSize * 1.5}px "Courier New"`;
+            ctx.font = `${blockSize * 1.3}px "Courier New"`;
             ctx.textAlign = 'center';
             ctx.fillText('Appuyez sur Entrée', canvas.width / 2, canvas.height / 2 - blockSize);
             ctx.fillText('ou touchez l\'écran', canvas.width / 2, canvas.height / 2 + blockSize);
