@@ -15,7 +15,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start; /* Aligne en haut */
             min-height: 100vh;
             margin: 0;
             padding: 20px 0;
@@ -38,14 +38,13 @@
             position: relative;
             width: calc(var(--game-height) / 2);
             height: var(--game-height);
-            max-width: 45vh; /* Ratio 1:2 */
-            max-height: 90vh;
+            max-width: 45vh;
+            max-height: 75vh; /* Hauteur réduite pour mobile */
         }
         canvas {
             width: 100%;
             height: 100%;
             border: 2px solid #555;
-            cursor: pointer; /* Indique que le canvas est cliquable */
         }
         .sidebar {
             display: flex;
@@ -76,7 +75,6 @@
             height: 80px;
             border: none;
         }
-
         .controls {
             text-align: center;
             width: 220px;
@@ -135,14 +133,14 @@
             .page-content {
                 flex-direction: row;
                 align-items: center;
-                gap: 20px;
+                gap: 20px; /* Espace réduit */
             }
-            #mobile-next-piece {
+            #mobile-next-piece, #touch-controls {
                 display: none;
             }
         }
         @media (max-width: 699px) {
-            .sidebar #next-piece-container {
+            .sidebar #next-piece-container, .game-column > p {
                 display: none;
             }
         }
@@ -168,7 +166,7 @@
                 <div id="touch-down" class="touch-btn">↓</div>
                 <div id="touch-right" class="touch-btn">→</div>
             </div>
-             <p style="font-size: 0.9em; margin-top: 15px;">Clavier: ← → ↓ (Déplacer), Espace (Drop) | Souris: Clic Gauche/Droit (Pivoter)</p>
+             <p style="font-size: 0.9em; margin-top: 15px;">Clavier : Flèches & ZQSD, Espace pour Drop</p>
         </div>
         <div class="sidebar">
             <div id="next-piece-container" class="info-box">
@@ -276,7 +274,7 @@
             if (isValidMove(player.piece, 0, 0)) return;
             
             player.x += offset;
-            player.piece = originalPiece; // Revert rotation if all kicks fail
+            player.piece = originalPiece;
         }
 
         function placePiece() {
@@ -302,7 +300,7 @@
             }
         }
         
-        function playerDrop() {
+        function playerDrop(isSoftDrop = false) {
             if (isValidMove(player.piece, 0, 1)) {
                 player.y++;
             } else {
@@ -328,11 +326,30 @@
             player.y = 0;
             nextPiece = createPiece();
         }
+        
         function update(time = 0) {
             const deltaTime = time - lastTime;
             lastTime = time;
             dropCounter += deltaTime;
-            if (dropCounter > dropInterval) playerDrop();
+
+            if (isValidMove(player.piece, 0, 1)) {
+                if (dropCounter > dropInterval) {
+                    player.y++;
+                    dropCounter = 0;
+                }
+            } else {
+                placePiece();
+                clearLines();
+                playerReset();
+                if (!isValidMove(player.piece, 0, 0)) {
+                    gameState = 'GAME_OVER';
+                    replayButton.style.display = 'block';
+                    if (score > highScore) {
+                        highScore = score;
+                        localStorage.setItem('tetrisHighScore', highScore);
+                    }
+                }
+            }
         }
 
         function lightenColor(hex, percent) {
@@ -442,10 +459,10 @@
             }
             if (gameState !== 'PLAYING' || countdownActive) return;
 
-            if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'q') playerMove(-1);
-            else if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') playerMove(1);
-            else if (e.key === 'ArrowDown' || e.key.toLowerCase() === 's') playerDrop();
-            else if (e.key === 'ArrowUp' || e.key.toLowerCase() === 'z') playerRotate(1); // Clockwise
+            if (e.key === 'ArrowLeft') playerMove(-1);
+            else if (e.key === 'ArrowRight') playerMove(1);
+            else if (e.key === 'ArrowDown') playerDrop();
+            else if (e.key === 'ArrowUp') playerRotate(1);
             else if (e.key === ' ') { 
                 while(isValidMove(player.piece, 0, 1)) { player.y++; }
                 playerDrop();
@@ -455,8 +472,8 @@
         function handleMouseClick(e) {
             if (gameState !== 'PLAYING' || countdownActive) return;
             e.preventDefault();
-            if (e.button === 0) playerRotate(-1); // Left click -> Counter-clockwise
-            if (e.button === 2) playerRotate(1); // Right click -> Clockwise
+            if (e.button === 0) playerRotate(-1);
+            if (e.button === 2) playerRotate(1);
         }
         
         function setupTouchControls() {
@@ -498,7 +515,7 @@
             ctx.fillStyle = 'rgba(0,0,0,0.7)';
             ctx.fillRect(0,0,canvas.width, canvas.height);
             ctx.fillStyle = 'white';
-            ctx.font = `${blockSize * 1.2}px "Courier New"`;
+            ctx.font = `${blockSize * 1.5}px "Courier New"`;
             ctx.textAlign = 'center';
             ctx.fillText('Appuyez sur Entrée', canvas.width / 2, canvas.height / 2 - blockSize);
             ctx.fillText('ou touchez l\'écran', canvas.width / 2, canvas.height / 2 + blockSize);
@@ -511,11 +528,11 @@
             setupTouchControls();
             setupSliderTouch();
             canvas.addEventListener('click', (e) => {
-                if(e.button !== 0) return; // Only trigger start on left click
+                if(e.button !== 0) return;
                 if (gameState === 'START' || gameState === 'GAME_OVER') startGame();
             });
             canvas.addEventListener('mousedown', handleMouseClick);
-            canvas.addEventListener('contextmenu', e => e.preventDefault()); // Prevent right-click menu
+            canvas.addEventListener('contextmenu', e => e.preventDefault());
         });
 
         window.addEventListener('resize', resizeGame);
