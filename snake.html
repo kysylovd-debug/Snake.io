@@ -13,6 +13,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center; /* Pour centrer verticalement */
             min-height: 100vh;
             margin: 0;
             padding: 20px 0;
@@ -20,6 +21,11 @@
             overscroll-behavior: none;
         }
         
+        h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+
         .main-container {
             display: flex;
             flex-direction: column;
@@ -39,7 +45,6 @@
             height: 100%;
             border: 2px solid #555;
             box-sizing: border-box;
-            image-rendering: pixelated;
         }
 
         .sidebar {
@@ -110,20 +115,15 @@
             border-radius: 10px;
         }
         #touch-up { top: 0; left: 50px; } #touch-down { bottom: 0; left: 50px; }
-        #touch-left { top: 50px; left: 0; } #touch-right { top: 50px, right: 0; }
+        #touch-left { top: 50px; left: 0; } #touch-right { top: 50px; right: 0; }
         
         @media (min-width: 1350px) {
             .main-container {
                 flex-direction: row;
-                align-items: flex-start;
+                align-items: center; /* Aligne verticalement le jeu et le panneau de score */
             }
             .sidebar {
                 text-align: left;
-            }
-            .game-and-controls {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
             }
         }
     </style>
@@ -184,7 +184,7 @@
         let snake, food, direction, score, highScore, gameStarted, gameLoopInterval, currentLevel, numApples;
         let nextDirection = null;
         let countdownActive = false;
-        let isHalfStep = false; // Pour le mouvement fluide
+        let isHalfStep = false;
         const maxLevel = 10;
         const speeds = [75, 70, 65, 60, 55, 50, 47, 45, 42, 40]; 
         const scorePerLevel = 2;
@@ -209,7 +209,7 @@
         function initGameVariables() {
             snake = [{ x: Math.floor(tileCount/2), y: Math.floor(tileCount/2) }];
             food = [];
-            direction = { x: 1, y: 0 }; // Droite
+            direction = { x: 1, y: 0 };
             nextDirection = { x: 1, y: 0 };
             score = 0;
             highScore = localStorage.getItem('snakeHighScore_simple') || 0;
@@ -232,22 +232,28 @@
         }
         
         function drawSnake() {
-            let offsetX = isHalfStep ? direction.x * gridSize / 2 : 0;
-            let offsetY = isHalfStep ? direction.y * gridSize / 2 : 0;
+            const offsetX = isHalfStep ? direction.x * gridSize / 2 : 0;
+            const offsetY = isHalfStep ? direction.y * gridSize / 2 : 0;
             
             snake.forEach((segment, index) => {
                 ctx.fillStyle = '#6495ED';
                 const x = segment.x * gridSize + offsetX;
                 const y = segment.y * gridSize + offsetY;
                 
-                // Le dessin du corps et des arrondis est complexe avec le mouvement fluide,
-                // nous revenons à une forme simple de carrés pour la stabilité.
                 ctx.fillRect(x, y, gridSize, gridSize);
 
                 if (index === 0) { // Tête
+                    ctx.beginPath();
+                    let arcX = x + gridSize / 2, arcY = y + gridSize / 2;
+                    if (direction.x === 1) { arcX = x + gridSize; } else if (direction.x === -1) { arcX = x; }
+                    else if (direction.y === -1) { arcY = y; } else if (direction.y === 1) { arcY = y + gridSize; }
+                    
+                    if(direction.y !== 0){ ctx.arc(arcX, arcY, gridSize / 2, direction.y === -1 ? Math.PI : 0, direction.y === -1 ? 0 : Math.PI); } 
+                    else { ctx.arc(arcX, arcY, gridSize / 2, direction.x === -1 ? Math.PI/2 : -Math.PI/2, direction.x === -1 ? -Math.PI/2 : Math.PI/2); }
+                    ctx.fill();
+
                     const centerX = x + gridSize / 2;
                     const centerY = y + gridSize / 2;
-                    
                     ctx.fillStyle = 'white';
                     const eyeRadius = Math.max(1.5, gridSize / 12);
                     let eye1X, eye1Y, eye2X, eye2Y;
@@ -269,11 +275,34 @@
                     ctx.arc(eye2X, eye2Y, pupilRadius, 0, 2 * Math.PI);
                     ctx.fill();
 
-                    // La langue est retirée pour la version fluide car sa position devient complexe.
+                    // Langue
+                    ctx.strokeStyle = 'red';
+                    ctx.lineWidth = Math.max(1, gridSize / 15);
+                    ctx.beginPath();
+                    const tongueLength = gridSize / 3;
+                    const tongueOffset = gridSize / 2 + ctx.lineWidth;
+                    const prongSize = Math.max(2, gridSize / 8);
+                    let startX, startY, midX, midY, tip1X, tip1Y, tip2X, tip2Y;
+                    if (direction.x === 1) { startX = centerX + tongueOffset; startY = centerY; midX = startX + tongueLength / 2; midY = startY; tip1X = midX + prongSize; tip1Y = midY - prongSize; tip2X = midX + prongSize; tip2Y = midY + prongSize; }
+                    else if (direction.x === -1) { startX = centerX - tongueOffset; startY = centerY; midX = startX - tongueLength / 2; midY = startY; tip1X = midX - prongSize; tip1Y = midY - prongSize; tip2X = midX - prongSize; tip2Y = midY + prongSize; }
+                    else if (direction.y === -1) { startX = centerX; startY = centerY - tongueOffset; midX = startX; midY = startY - tongueLength / 2; tip1X = midX - prongSize; tip1Y = midY - prongSize; tip2X = midX + prongSize; tip2Y = midY - prongSize; }
+                    else { startX = centerX; startY = centerY + tongueOffset; midX = startX; midY = startY + tongueLength / 2; tip1X = midX - prongSize; tip1Y = midY + prongSize; tip2X = midX + prongSize; tip2Y = midY + prongSize; }
+                    ctx.moveTo(startX, startY); ctx.lineTo(midX, midY); ctx.lineTo(tip1X, tip1Y);
+                    ctx.moveTo(midX, midY); ctx.lineTo(tip2X, tip2Y);
+                    ctx.stroke();
+                }
+                if (index === snake.length - 1 && snake.length > 1) { // Queue
+                    const prevSegment = snake[index - 1];
+                    ctx.beginPath();
+                    let arcX = x + gridSize / 2, arcY = y + gridSize / 2;
+                    if (prevSegment.x > segment.x) { arcX = x; } else if (prevSegment.x < segment.x) { arcX = x + gridSize; }
+                    else if (prevSegment.y > segment.y) { arcY = y; } else if (prevSegment.y < segment.y) { arcY = y + gridSize; }
+                    if(segment.y !== prevSegment.y){ ctx.arc(arcX, arcY, gridSize / 2, segment.y > prevSegment.y ? Math.PI : 0, segment.y > prevSegment.y ? 0 : Math.PI); } 
+                    else { ctx.arc(arcX, arcY, gridSize / 2, segment.x > prevSegment.x ? Math.PI/2 : -Math.PI/2, segment.x > prevSegment.x ? -Math.PI/2 : Math.PI/2); }
+                    ctx.fill();
                 }
             });
         }
-
         function drawGame() {
             drawBackground();
             ctx.fillStyle = 'red';
@@ -284,7 +313,6 @@
             });
             drawSnake();
         }
-        
         function drawStartScreen(){
             drawBackground();
             ctx.fillStyle='rgba(0, 0, 0, 0.4)';
@@ -294,39 +322,35 @@
             ctx.textAlign='center';
             ctx.fillText('Appuyez pour jouer',canvas.width/2,canvas.height/2);
         }
-        
         function generateApples(){while(food.length<numApples){let newApple={x:Math.floor(Math.random()*tileCount),y:Math.floor(Math.random()*tileCount)};const onSnake=snake.some(seg=>seg.x===newApple.x&&seg.y===newApple.y);const onFood=food.some(f=>f.x===newApple.x&&f.y===newApple.y);if(!onSnake&&!onFood){food.push(newApple)}}}
         function updateGameSpeed(){clearInterval(gameLoopInterval);const newSpeed=speeds[currentLevel-1];gameLoopInterval=setInterval(update,newSpeed)}
-        
         function update(){
-            isHalfStep = !isHalfStep; // Alterne entre demi-pas et pas complet
-
-            if (isHalfStep) { // Demi-pas: on ne fait que redessiner
-                drawGame();
-                return;
+            isHalfStep = !isHalfStep;
+            if (!isHalfStep) {
+                if(nextDirection){
+                    if((nextDirection.x !== -direction.x) || (nextDirection.y !== -direction.y)){
+                        direction = nextDirection;
+                    }
+                    nextDirection = null;
+                }
+                const head={x:snake[0].x + direction.x, y:snake[0].y + direction.y};
+                if(head.x<0||head.x>=tileCount||head.y<0||head.y>=tileCount||snake.some(seg=>seg.x===head.x&&seg.y===head.y)){endGame();return}
+                snake.unshift(head);
+                let eatenAppleIndex=-1;
+                food.forEach((apple,index)=>{if(head.x===apple.x&&head.y===apple.y){eatenAppleIndex=index}});
+                if(eatenAppleIndex>-1){
+                    score++;
+                    food.splice(eatenAppleIndex,1);
+                    generateApples();
+                    const newLevel=Math.min(maxLevel,Math.floor(score/scorePerLevel)+1);
+                    if(newLevel>currentLevel){currentLevel=newLevel;speedSlider.value=currentLevel;updateGameSpeed()}
+                } else {
+                    snake.pop();
+                }
+                updateScoreDisplay();
             }
-
-            if(nextDirection){direction=nextDirection;nextDirection=null}
-            const head={x:snake[0].x + direction.x, y:snake[0].y + direction.y};
-            
-            if(head.x<0||head.x>=tileCount||head.y<0||head.y>=tileCount||snake.some(seg=>seg.x===head.x&&seg.y===head.y)){endGame();return}
-            
-            snake.unshift(head);
-            let eatenAppleIndex=-1;
-            food.forEach((apple,index)=>{if(head.x===apple.x&&head.y===apple.y){eatenAppleIndex=index}});
-            if(eatenAppleIndex>-1){
-                score++;
-                food.splice(eatenAppleIndex,1);
-generateApples();
-                const newLevel=Math.min(maxLevel,Math.floor(score/scorePerLevel)+1);
-                if(newLevel>currentLevel){currentLevel=newLevel;speedSlider.value=currentLevel;updateGameSpeed()}
-            } else {
-                snake.pop();
-            }
-            updateScoreDisplay();
             drawGame();
         }
-
         function endGame(){
             clearInterval(gameLoopInterval);
             if (score > highScore) {
@@ -347,14 +371,14 @@ generateApples();
             if(countdownActive) return;
             if(!gameStarted){startGame();return}
             const key=e.key.toLowerCase();
-            if((key==='arrowup'||key==='z'||key==='w') && direction.y === 0) nextDirection = {x:0, y:-1};
-            if((key==='arrowdown'||key==='s') && direction.y === 0) nextDirection = {x:0, y:1};
-            if((key==='arrowleft'||key==='q'||key==='a') && direction.x === 0) nextDirection = {x:-1, y:0};
-            if((key==='arrowright'||key==='d') && direction.x === 0) nextDirection = {x:1, y:0};
+            if((key==='arrowup'||key==='z'||key==='w')) nextDirection = {x:0, y:-1};
+            if((key==='arrowdown'||key==='s')) nextDirection = {x:0, y:1};
+            if((key==='arrowleft'||key==='q'||key==='a')) nextDirection = {x:-1, y:0};
+            if((key==='arrowright'||key==='d')) nextDirection = {x:1, y:0};
         }
         function startGame(){if(gameStarted)return;gameStarted=true;countdownActive=true;currentLevel=parseInt(speedSlider.value,10);numApples=parseInt(appleSlider.value,10);speedSlider.disabled=true;appleSlider.disabled=true;generateApples();let countdown=3;const countdownInterval=setInterval(()=>{drawGame();if(countdown>0){ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle='white';ctx.font=`${gridSize*7}px "Courier New"`;ctx.textAlign='center';ctx.fillText(countdown,canvas.width/2,canvas.height/2+gridSize*2);countdown--}else{clearInterval(countdownInterval);countdownActive=false;updateGameSpeed()}},1000)}
         function resetGame(){replayButton.style.display='none';speedSlider.disabled=false;appleSlider.disabled=false;initGameVariables();resizeCanvas();drawStartScreen()}
-        function setupTouchControls(){const isTouchDevice=('ontouchstart'in window)||(navigator.maxTouchPoints>0);if(!isTouchDevice)return;document.getElementById('touch-controls').style.display='block';const up=document.getElementById('touch-up'),down=document.getElementById('touch-down'),left=document.getElementById('touch-left'),right=document.getElementById('touch-right');const handleTouch=(e,newDir)=>{e.preventDefault();if(countdownActive)return;if(!gameStarted)startGame();if(newDir.y === 0 && direction.y !== 0) nextDirection = newDir; if(newDir.x === 0 && direction.x !== 0) nextDirection = newDir;}
+        function setupTouchControls(){const isTouchDevice=('ontouchstart'in window)||(navigator.maxTouchPoints>0);if(!isTouchDevice)return;document.getElementById('touch-controls').style.display='block';const up=document.getElementById('touch-up'),down=document.getElementById('touch-down'),left=document.getElementById('touch-left'),right=document.getElementById('touch-right');const handleTouch=(e,newDir)=>{e.preventDefault();if(countdownActive)return;if(!gameStarted)startGame();nextDirection = newDir;}
 up.addEventListener('touchstart',(e)=>handleTouch(e,{x:0,y:-1}),{passive:false});down.addEventListener('touchstart',(e)=>handleTouch(e,{x:0,y:1}),{passive:false});left.addEventListener('touchstart',(e)=>handleTouch(e,{x:-1,y:0}),{passive:false});right.addEventListener('touchstart',(e)=>handleTouch(e,{x:1,y:0}),{passive:false})}
         function setupSliderTouch(){const sliders=[speedSlider,appleSlider];const e=e=>{const t=e.target;e.preventDefault();const n=t.getBoundingClientRect(),o=e.touches[0],l=o.clientX-n.left,i=Math.max(0,Math.min(1,l/n.width)),d=parseFloat(t.min),a=parseFloat(t.max);t.value=Math.round(d+(a-d)*i)};sliders.forEach(t=>{t.addEventListener("touchstart",e,{passive:!1}),t.addEventListener("touchmove",e,{passive:!1})})}
 
