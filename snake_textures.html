@@ -183,6 +183,7 @@
         const tileCount = 22;
         let gridSize; 
         
+        // MODIFICATION: Ajout de la texture pour la pomme
         const appleTexture = new Image();
         
         const scoreElement = document.getElementById('current-score');
@@ -279,9 +280,15 @@
         }
         function drawGame() {
             drawBackground();
+            // MODIFICATION: Dessine l'image de la pomme
             food.forEach(apple => {
-                if (appleTexture.complete) {
+                if (appleTexture.complete) { // Vérifie si l'image est chargée
                     ctx.drawImage(appleTexture, apple.x * gridSize, apple.y * gridSize, gridSize, gridSize);
+                } else { // Dessine un cercle rouge en attendant
+                    ctx.fillStyle = 'red';
+                    ctx.beginPath();
+                    ctx.arc(apple.x * gridSize + gridSize / 2, apple.y * gridSize + gridSize / 2, gridSize / 2, 0, 2 * Math.PI);
+                    ctx.fill();
                 }
             });
             drawSnake();
@@ -365,16 +372,20 @@
 up.addEventListener('touchstart',(e)=>handleTouch(e,{x:0,y:-1}),{passive:false});down.addEventListener('touchstart',(e)=>handleTouch(e,{x:0,y:1}),{passive:false});left.addEventListener('touchstart',(e)=>handleTouch(e,{x:-1,y:0}),{passive:false});right.addEventListener('touchstart',(e)=>handleTouch(e,{x:1,y:0}),{passive:false})}
         function setupSliderTouch(){const sliders=[speedSlider,appleSlider];const e=e=>{const t=e.target;e.preventDefault();const n=t.getBoundingClientRect(),o=e.touches[0],l=o.clientX-n.left,i=Math.max(0,Math.min(1,l/n.width)),d=parseFloat(t.min),a=parseFloat(t.max);t.value=Math.round(d+(a-d)*i)};sliders.forEach(t=>{t.addEventListener("touchstart",e,{passive:!1}),t.addEventListener("touchmove",e,{passive:!1})})}
 
+        // MODIFICATION: Pré-chargeur pour la pomme
         window.addEventListener('DOMContentLoaded', (event) => {
             appleTexture.onload = () => {
+                // Le jeu ne démarre que quand la pomme est prête
                 initGameVariables();
                 resizeCanvas();
                 drawStartScreen();
                 setupTouchControls();
                 setupSliderTouch();
             };
+            // Lance le chargement de l'image de la pomme
             appleTexture.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAKtJREFUOE+t07ENgzAUhOFvo1RCVESEjBHRgTqgA1B0BGeiQ6ACqpKk7YwHi/0Dac5/cmBLGI8PoPcqhC7g2505cZtPlZGAgI/pM82kTCGgvRHgZk1sA5Mv2wI+v/MNT7/d5y/a+Y/qjW2B5z/D4wYskb4sY8A2Gfs5JIAuM1K1f0DkTy3jgA7j5b2/gGXK5Z1xATB5u1f4/d4wO2N7APe8bQt4Bvz/L6D/gH8A/wD+gB9iXwB/AHz/f0BvK4C2E0A7L4B2D/D6pfEDvIBoQ2G6AAAAAElFTSuQmCC';
         });
+
         window.addEventListener('resize', resizeCanvas);
         document.addEventListener('keydown', handleKeyPress);
         replayButton.addEventListener('click', resetGame);
