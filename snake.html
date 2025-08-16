@@ -31,6 +31,7 @@
             display: flex;
             justify-content: center;
             width: 100%;
+            align-items: center;
         }
 
         .game-wrapper {
@@ -192,7 +193,7 @@
         let nextDirection = null;
         let countdownActive = false;
         const maxLevel = 10;
-        const speeds = [150, 140, 130, 120, 110, 100, 95, 90, 85, 80];
+        const speeds = [150, 140, 130, 120, 110, 100, 95, 90, 85, 80]; 
         const scorePerLevel = 2;
 
         function resizeCanvas() {
@@ -242,12 +243,57 @@
                 ctx.fillStyle = '#6495ED';
                 const x = segment.x * gridSize;
                 const y = segment.y * gridSize;
+                
+                // Le corps et la queue restent des carrés pleins
                 ctx.fillRect(x, y, gridSize, gridSize);
-                if (index === 0) { /* ... (drawing logic is unchanged) ... */ }
-                if (index === snake.length - 1 && snake.length > 1) { /* ... (drawing logic is unchanged) ... */ }
+
+                // La tête est la seule partie avec des détails
+                if (index === 0) {
+                    const centerX = x + gridSize / 2;
+                    const centerY = y + gridSize / 2;
+
+                    // Dessine la langue en premier, car c'est la "vraie" tête
+                    ctx.strokeStyle = 'red';
+                    ctx.lineWidth = Math.max(1, gridSize / 15);
+                    ctx.beginPath();
+                    const tongueLength = gridSize / 3;
+                    const tongueOffset = gridSize / 2; // Offset depuis le centre
+                    const prongSize = Math.max(2, gridSize / 8);
+                    let startX, startY, midX, midY, tip1X, tip1Y, tip2X, tip2Y;
+
+                    if (direction.x === 1) { startX = centerX + tongueOffset; startY = centerY; midX = startX + tongueLength / 2; midY = startY; tip1X = midX + prongSize; tip1Y = midY - prongSize; tip2X = midX + prongSize; tip2Y = midY + prongSize; }
+                    else if (direction.x === -1) { startX = centerX - tongueOffset; startY = centerY; midX = startX - tongueLength / 2; midY = startY; tip1X = midX - prongSize; tip1Y = midY - prongSize; tip2X = midX - prongSize; tip2Y = midY + prongSize; }
+                    else if (direction.y === -1) { startX = centerX; startY = centerY - tongueOffset; midX = startX; midY = startY - tongueLength / 2; tip1X = midX - prongSize; tip1Y = midY - prongSize; tip2X = midX + prongSize; tip2Y = midY - prongSize; }
+                    else { startX = centerX; startY = centerY + tongueOffset; midX = startX; midY = startY + tongueLength / 2; tip1X = midX - prongSize; tip1Y = midY + prongSize; tip2X = midX + prongSize; tip2Y = midY + prongSize; }
+                    
+                    ctx.moveTo(startX, startY); ctx.lineTo(midX, midY); ctx.lineTo(tip1X, tip1Y);
+                    ctx.moveTo(midX, midY); ctx.lineTo(tip2X, tip2Y);
+                    ctx.stroke();
+
+                    // Dessine les yeux par-dessus le carré bleu
+                    ctx.fillStyle = 'white';
+                    const eyeRadius = Math.max(1.5, gridSize / 12);
+                    let eye1X, eye1Y, eye2X, eye2Y;
+                    const eyeOffset = gridSize / 4;
+                    const eyeDist = gridSize / 5;
+                    if (direction.x === 1) { eye1X = centerX + eyeDist; eye1Y = centerY - eyeOffset; eye2X = centerX + eyeDist; eye2Y = centerY + eyeOffset; }
+                    else if (direction.x === -1) { eye1X = centerX - eyeDist; eye1Y = centerY - eyeOffset; eye2X = centerX - eyeDist; eye2Y = centerY + eyeOffset; }
+                    else if (direction.y === -1) { eye1X = centerX - eyeOffset; eye1Y = centerY - eyeDist; eye2X = centerX + eyeOffset; eye2Y = centerY - eyeDist; }
+                    else { eye1X = centerX - eyeOffset; eye1Y = centerY + eyeDist; eye2X = centerX + eyeOffset; eye2Y = centerY + eyeDist; }
+                    ctx.beginPath();
+                    ctx.arc(eye1X, eye1Y, eyeRadius, 0, 2 * Math.PI);
+                    ctx.arc(eye2X, eye2Y, eyeRadius, 0, 2 * Math.PI);
+                    ctx.fill();
+
+                    ctx.fillStyle = 'black';
+                    const pupilRadius = eyeRadius * 0.6;
+                    ctx.beginPath();
+                    ctx.arc(eye1X, eye1Y, pupilRadius, 0, 2 * Math.PI);
+                    ctx.arc(eye2X, eye2Y, pupilRadius, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
             });
         }
-
         function drawGame() {
             drawBackground();
             ctx.fillStyle = 'red';
@@ -258,7 +304,6 @@
             });
             drawSnake();
         }
-        
         function drawStartScreen(){
             drawBackground();
             ctx.fillStyle='rgba(0, 0, 0, 0.4)';
@@ -268,13 +313,11 @@
             ctx.textAlign='center';
             ctx.fillText('Appuyez pour jouer',canvas.width/2,canvas.height/2);
         }
-        
         function generateApples(){while(food.length<numApples){let newApple={x:Math.floor(Math.random()*tileCount),y:Math.floor(Math.random()*tileCount)};const onSnake=snake.some(seg=>seg.x===newApple.x&&seg.y===newApple.y);const onFood=food.some(f=>f.x===newApple.x&&f.y===newApple.y);if(!onSnake&&!onFood){food.push(newApple)}}}
         function updateGameSpeed(){clearInterval(gameLoopInterval);const newSpeed=speeds[currentLevel-1];gameLoopInterval=setInterval(update,newSpeed)}
         
         function update() {
             if (nextDirection) {
-                // Empêche de se retourner sur soi-même
                 if ((nextDirection.x !== -direction.x) || (nextDirection.y !== -direction.y)) {
                     direction = nextDirection;
                 }
@@ -282,29 +325,29 @@
             }
 
             const currentHead = snake[0];
-            const nextHeadPos = { x: currentHead.x + direction.x, y: currentHead.y + direction.y };
+            // La "vraie" tête logique est maintenant la position de la langue
+            const logicalHead = { x: currentHead.x + direction.x, y: currentHead.y + direction.y };
 
-            // --- NOUVELLE LOGIQUE DE COLLISION ---
             // 1. Collision avec les murs
-            if (nextHeadPos.x < 0 || nextHeadPos.x >= tileCount || nextHeadPos.y < 0 || nextHeadPos.y >= tileCount) {
+            if (logicalHead.x < 0 || logicalHead.x >= tileCount || logicalHead.y < 0 || logicalHead.y >= tileCount) {
                 endGame();
                 return;
             }
 
-            // 2. Collision avec le corps
-            // On vérifie contre le corps, mais on ignore la queue qui va bouger
-            const snakeBody = snake.slice(0, snake.length - 1);
-            if (snakeBody.some(seg => seg.x === nextHeadPos.x && seg.y === nextHeadPos.y)) {
+            // 2. Collision avec le corps (le serpent entier, puisque la langue est devant)
+            if (snake.some(seg => seg.x === logicalHead.x && seg.y === logicalHead.y)) {
                 endGame();
                 return;
             }
 
             // Si aucune collision, on avance
-            snake.unshift(nextHeadPos);
+            const newHead = {x: currentHead.x + direction.x, y: currentHead.y + direction.y};
+            snake.unshift(newHead);
             
             let eatenAppleIndex = -1;
             food.forEach((apple, index) => {
-                if (nextHeadPos.x === apple.x && nextHeadPos.y === apple.y) {
+                // La collision avec la pomme se fait sur la case de la langue/tête
+                if (newHead.x === apple.x && newHead.y === apple.y) {
                     eatenAppleIndex = index;
                 }
             });
@@ -351,9 +394,10 @@
             if((key==='arrowleft'||key==='q'||key==='a')) nextDirection = {x:-1, y:0};
             if((key==='arrowright'||key==='d')) nextDirection = {x:1, y:0};
         }
-        function startGame(){if(gameStarted)return;gameStarted=true;countdownActive=true;currentLevel=parseInt(speedSlider.value,10);numApples=parseInt(appleSlider.value,10);speedSlider.disabled=true;appleSlider.disabled=true;generateApples();let countdown=3;const countdownInterval=setInterval(()=>{drawGame();if(countdown>0){ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle='white';ctx.font=`${gridSize*7}px "Courier New"`;ctx.textAlign='center';ctx.fillText(countdown,canvas.width/2,canvas.height/2+gridSize*2);countdown--}else{clearInterval(countdownInterval);countdownActive=false;updateGameSpeed()}},1000)}
+        function startGame(){if(gameStarted)return;gameStarted=true;countdownActive=true;currentLevel=parseInt(speedSlider.value,10);numApples=parseInt(appleSlider.value,10);speedSlider.disabled=true;appleSlider.disabled=true;generateApples();let countdown=3;const countdownInterval=setInterval(()=>{drawGame();if(countdown>0){ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle='white';
+ctx.font=`${gridSize*7}px "Courier New"`;ctx.textAlign='center';ctx.fillText(countdown,canvas.width/2,canvas.height/2+gridSize*2);countdown--}else{clearInterval(countdownInterval);countdownActive=false;updateGameSpeed()}},1000)}
         function resetGame(){replayButton.style.display='none';speedSlider.disabled=false;appleSlider.disabled=false;initGameVariables();resizeCanvas();drawStartScreen()}
-        function setupTouchControls(){const isTouchDevice=('ontouchstart'in window)||(navigator.maxTouchPoints>0);if(!isTouchDevice)return;document.getElementById('touch-controls').style.display='block';const up=document.getElementById('touch-up'),down=document.getElementById('touch-down'),left=document.getElementById('touch-left'),right=document.getElementById('touch-right');const handleTouch=(e,newDir)=>{e.preventDefault();if(countdownActive)return;if(!gameStarted)startGame();nextDirection = newDir;}
+        function setupTouchControls(){const isTouchDevice=('ontouchstart'in window)||(navigator.maxTouchPoints>0);if(!isTouchDevice)return;document.getElementById('touch-controls').style.display='block';const up=document.getElementById('touch-up'),down=document.getElementById('touch-down'),left=document.getElementById('touch-left'),right=document.getElementById('touch-right');const handleTouch=(e,newDir)=>{e.preventDefault();if(countdownActive)return;if(!gameStarted)startGame();if(newDir.y===0&&direction.y!==0)nextDirection=newDir;if(newDir.x===0&&direction.x!==0)nextDirection=newDir}
 up.addEventListener('touchstart',(e)=>handleTouch(e,{x:0,y:-1}),{passive:false});down.addEventListener('touchstart',(e)=>handleTouch(e,{x:0,y:1}),{passive:false});left.addEventListener('touchstart',(e)=>handleTouch(e,{x:-1,y:0}),{passive:false});right.addEventListener('touchstart',(e)=>handleTouch(e,{x:1,y:0}),{passive:false})}
         function setupSliderTouch(){const sliders=[speedSlider,appleSlider];const e=e=>{const t=e.target;e.preventDefault();const n=t.getBoundingClientRect(),o=e.touches[0],l=o.clientX-n.left,i=Math.max(0,Math.min(1,l/n.width)),d=parseFloat(t.min),a=parseFloat(t.max);t.value=Math.round(d+(a-d)*i)};sliders.forEach(t=>{t.addEventListener("touchstart",e,{passive:!1}),t.addEventListener("touchmove",e,{passive:!1})})}
 
@@ -367,9 +411,6 @@ up.addEventListener('touchstart',(e)=>handleTouch(e,{x:0,y:-1}),{passive:false})
         window.addEventListener('resize', resizeCanvas);
         document.addEventListener('keydown', handleKeyPress);
         replayButton.addEventListener('click', resetGame);
-
-        // --- Copie compactée de drawSnake pour la lisibilité ---
-        function drawSnake(){snake.forEach((e,t)=>{ctx.fillStyle="#6495ED";const n=e.x*gridSize,o=e.y*gridSize;ctx.fillRect(n,o,gridSize,gridSize);if(0===t){ctx.beginPath();let e=n+gridSize/2,t=o+gridSize/2;"right"===direction.x?e=n+gridSize:"left"===direction.x?e=n:-1===direction.y?t=o:1===direction.y&&(t=o+gridSize),0!==direction.y?ctx.arc(e,t,gridSize/2,-1===direction.y?Math.PI:0,-1===direction.y?0:Math.PI):ctx.arc(e,t,gridSize/2,-1===direction.x?Math.PI/2:-Math.PI/2,-1===direction.x?-Math.PI/2:Math.PI/2),ctx.fill();const l=n+gridSize/2,i=o+gridSize/2;ctx.fillStyle="white";const d=Math.max(1.5,gridSize/12);let a,r,s,c;const u=gridSize/4,p=gridSize/5;1===direction.x?(a=l+p,r=i-u,s=l+p,c=i+u):-1===direction.x?(a=l-p,r=i-u,s=l-p,c=i+u):-1===direction.y?(a=l-u,r=i-p,s=l+u,c=i-p):(a=l-u,r=i+p,s=l+u,c=i+p),ctx.beginPath(),ctx.arc(a,r,d,0,2*Math.PI),ctx.arc(s,c,d,0,2*Math.PI),ctx.fill(),ctx.fillStyle="black";const m=d*.6;ctx.beginPath(),ctx.arc(a,r,m,0,2*Math.PI),ctx.arc(s,c,m,0,2*Math.PI),ctx.fill()}if(t===snake.length-1&&snake.length>1){const l=snake[t-1];ctx.beginPath();let i=n+gridSize/2,d=o+gridSize/2;l.x>e.x?i=n:l.x<e.x?i=n+gridSize:l.y>e.y?d=o:l.y<e.y&&(d=o+gridSize),e.y!==l.y?ctx.arc(i,d,gridSize/2,e.y>l.y?Math.PI:0,e.y>l.y?0:Math.PI):ctx.arc(i,d,gridSize/2,e.x>l.x?Math.PI/2:-Math.PI/2,e.x>l.x?-Math.PI/2:Math.PI/2),ctx.fill()}})}
     </script>
 </body>
 </html>
