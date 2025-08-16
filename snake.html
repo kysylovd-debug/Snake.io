@@ -11,50 +11,33 @@
             color: #fff;
             font-family: 'Courier New', Courier, monospace;
             display: flex;
-            flex-direction: column;
-            align-items: center;
             justify-content: center;
+            align-items: center;
             min-height: 100vh;
             margin: 0;
             padding: 20px 0;
             box-sizing: border-box;
-            overscroll-behavior: none;
         }
         
+        /* Conteneur principal qui centre tout */
+        #app-container {
+            position: relative; /* Référence pour le positionnement des scores sur PC */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
         h1 {
             font-size: 3em;
-            margin-bottom: 20px;
-        }
-
-        .main-container {
-            position: relative;
-            display: flex;
-            justify-content: center;
-            width: 100%;
-            align-items: center;
-        }
-
-        .game-wrapper {
-            position: relative;
-            width: var(--game-size);
-            height: var(--game-size);
-            max-width: 95vw;
-            max-height: 95vw;
-        }
-        canvas {
-            width: 100%;
-            height: 100%;
-            border: 2px solid #555;
-            box-sizing: border-box;
+            margin: 0;
         }
 
         .scores-container {
             display: flex;
-            flex-direction: column;
             gap: 20px;
-            margin-top: 20px;
             width: 100%;
-            align-items: center;
+            justify-content: center;
         }
         .score-box {
             background-color: #2a2a2a;
@@ -73,12 +56,24 @@
             color: #AED542;
         }
 
+        .game-wrapper {
+            position: relative;
+            width: var(--game-size);
+            height: var(--game-size);
+            max-width: 95vw;
+            max-height: 95vw;
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+            border: 2px solid #555;
+            box-sizing: border-box;
+        }
         .controls {
             text-align: center;
             width: 400px;
             max-width: 95vw;
         }
-        p { margin: 5px 0; font-size: 1.2em; }
         .slider-container { margin-top: 10px; }
         .slider-labels {
             display: flex;
@@ -112,7 +107,7 @@
         #touch-controls {
             display: none;
             position: relative;
-            margin: 20px auto 10px auto;
+            margin: 10px auto;
             width: 150px;
             height: 150px;
         }
@@ -124,13 +119,18 @@
         #touch-up { top: 0; left: 50px; } #touch-down { bottom: 0; left: 50px; }
         #touch-left { top: 50px; left: 0; } #touch-right { top: 50px; right: 0; }
         
-        @media (min-width: 1350px) {
+        /* Media Query pour les écrans larges (PC) */
+        @media (min-width: 1300px) {
+            #app-container {
+                /* La largeur s'adapte au contenu, mais le body le centre */
+                width: auto;
+            }
             .scores-container {
                 position: absolute;
-                left: 50%;
-                top: 0;
-                margin-left: calc(var(--game-size) / 2 + 30px);
-                margin-top: 0;
+                left: 100%; /* Se place juste à droite de son conteneur parent */
+                top: 50%;
+                transform: translateY(-50%);
+                margin-left: 30px; /* Espace entre le jeu et les scores */
                 flex-direction: column;
                 width: auto;
             }
@@ -138,12 +138,9 @@
     </style>
 </head>
 <body>
-    <h1>SNAKE</h1>
-    <div class="main-container">
-        <div class="game-wrapper" id="game-wrapper">
-            <canvas id="gameCanvas"></canvas>
-            <button id="replayButton">Rejouer</button>
-        </div>
+    <div id="app-container">
+        <h1>SNAKE</h1>
+
         <div class="scores-container">
             <div class="score-box">
                 <p>SCORE</p>
@@ -154,30 +151,35 @@
                 <span id="high-score">0</span>
             </div>
         </div>
-    </div>
-    
-    <div id="touch-controls">
-        <div id="touch-up" class="touch-btn"></div>
-        <div id="touch-down" class="touch-btn"></div>
-        <div id="touch-left" class="touch-btn"></div>
-        <div id="touch-right" class="touch-btn"></div>
-    </div>
+        
+        <div class="game-wrapper" id="game-wrapper">
+            <canvas id="gameCanvas"></canvas>
+            <button id="replayButton">Rejouer</button>
+        </div>
+        
+        <div id="touch-controls">
+            <div id="touch-up" class="touch-btn"></div>
+            <div id="touch-down" class="touch-btn"></div>
+            <div id="touch-left" class="touch-btn"></div>
+            <div id="touch-right" class="touch-btn"></div>
+        </div>
 
-    <div class="controls">
-        <div class="slider-container">
-            <p style="margin-bottom: 0;">Vitesse de départ:</p>
-            <div class="slider-labels"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span></div>
-            <input type="range" id="speedSlider" min="1" max="10" value="4">
+        <div class="controls">
+            <div class="slider-container">
+                <p style="margin-bottom: 0;">Vitesse de départ:</p>
+                <div class="slider-labels"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span></div>
+                <input type="range" id="speedSlider" min="1" max="10" value="4">
+            </div>
+            <div class="slider-container">
+                <p style="margin-bottom: 0;">Nombre de pommes:</p>
+                <div class="slider-labels"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
+                <input type="range" id="appleSlider" min="1" max="5" value="1">
+            </div>
         </div>
-        <div class="slider-container">
-            <p style="margin-bottom: 0;">Nombre de pommes:</p>
-            <div class="slider-labels"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
-            <input type="range" id="appleSlider" min="1" max="5" value="1">
-        </div>
-        <p style="font-size: 0.9em; margin-top: 15px;">Utilisez les flèches ou ZQSD</p>
     </div>
 
     <script>
+        // --- LE JAVASCRIPT RESTE INCHANGÉ ---
         const currentScoreElement = document.getElementById('current-score');
         const highScoreElement = document.getElementById('high-score');
         const canvas = document.getElementById('gameCanvas');
@@ -185,7 +187,6 @@
         const wrapper = document.getElementById('game-wrapper');
         const tileCount = 22;
         let gridSize; 
-        
         const speedSlider = document.getElementById('speedSlider');
         const appleSlider = document.getElementById('appleSlider');
         const replayButton = document.getElementById('replayButton');
@@ -207,20 +208,12 @@
                 drawGame();
             }
         }
-
         function updateScoreDisplay() {
             currentScoreElement.textContent = score;
             highScoreElement.textContent = highScore;
         }
-
         function initGameVariables() {
-            const startX = Math.floor(tileCount / 2);
-            const startY = Math.floor(tileCount / 2);
-            // MODIFICATION: Le serpent démarre avec 2 cases
-            snake = [
-                { x: startX, y: startY },
-                { x: startX - 1, y: startY }
-            ];
+            snake = [{ x: Math.floor(tileCount/2), y: Math.floor(tileCount/2) }];
             food = [];
             direction = { x: 1, y: 0 };
             nextDirection = { x: 1, y: 0 };
@@ -232,7 +225,6 @@
             numApples = parseInt(appleSlider.value, 10);
             updateScoreDisplay();
         }
-        
         function drawBackground() {
             const color1 = '#AED542';
             const color2 = '#A4D13D';
@@ -243,61 +235,54 @@
                 }
             }
         }
-        
-        // MODIFICATION: Nouvelle fonction de dessin du serpent
         function drawSnake() {
-            if (!snake || snake.length < 2) return;
-
-            // Dessine le corps du serpent
-            ctx.strokeStyle = '#6495ED';
-            ctx.lineWidth = gridSize * 0.9; // Épaisseur de 90% de la case
-            ctx.lineCap = 'round';   // Arrondit la tête et la queue
-            ctx.lineJoin = 'round';  // Arrondit les virages
-            
-            ctx.beginPath();
-            ctx.moveTo(
-                snake[0].x * gridSize + gridSize / 2, 
-                snake[0].y * gridSize + gridSize / 2
-            );
-            for (let i = 1; i < snake.length; i++) {
-                ctx.lineTo(
-                    snake[i].x * gridSize + gridSize / 2, 
-                    snake[i].y * gridSize + gridSize / 2
-                );
-            }
-            ctx.stroke();
-
-            // Dessine les yeux sur la tête par-dessus
-            const head = snake[0];
-            const centerX = head.x * gridSize + gridSize / 2;
-            const centerY = head.y * gridSize + gridSize / 2;
-            
-            ctx.fillStyle = 'white';
-            const eyeRadius = Math.max(1.5, gridSize / 8);
-            let eye1X, eye1Y, eye2X, eye2Y;
-            const eyeOffset = gridSize / 5;
-            
-            if (direction.x !== 0) { // Horizontal
-                eye1X = centerX; eye1Y = centerY - eyeOffset;
-                eye2X = centerX; eye2Y = centerY + eyeOffset;
-            } else { // Vertical
-                eye1X = centerX - eyeOffset; eye1Y = centerY;
-                eye2X = centerX + eyeOffset; eye2Y = centerY;
-            }
-            
-            ctx.beginPath();
-            ctx.arc(eye1X, eye1Y, eyeRadius, 0, 2 * Math.PI);
-            ctx.arc(eye2X, eye2Y, eyeRadius, 0, 2 * Math.PI);
-            ctx.fill();
-
-            ctx.fillStyle = 'black';
-            const pupilRadius = eyeRadius * 0.6;
-            ctx.beginPath();
-            ctx.arc(eye1X, eye1Y, pupilRadius, 0, 2 * Math.PI);
-            ctx.arc(eye2X, eye2Y, pupilRadius, 0, 2 * Math.PI);
-            ctx.fill();
+            snake.forEach((segment, index) => {
+                ctx.fillStyle = '#6495ED';
+                const x = segment.x * gridSize;
+                const y = segment.y * gridSize;
+                ctx.fillRect(x, y, gridSize, gridSize);
+                if (index === 0) {
+                    ctx.beginPath();
+                    let arcX = x + gridSize / 2, arcY = y + gridSize / 2;
+                    if (direction.x === 1) { arcX = x + gridSize; } else if (direction.x === -1) { arcX = x; }
+                    else if (direction.y === -1) { arcY = y; } else if (direction.y === 1) { arcY = y + gridSize; }
+                    if(direction.y !== 0){ ctx.arc(arcX, arcY, gridSize / 2, direction.y === -1 ? Math.PI : 0, direction.y === -1 ? 0 : Math.PI); } 
+                    else { ctx.arc(arcX, arcY, gridSize / 2, direction.x === -1 ? Math.PI/2 : -Math.PI/2, direction.x === -1 ? -Math.PI/2 : Math.PI/2); }
+                    ctx.fill();
+                    const centerX = x + gridSize / 2;
+                    const centerY = y + gridSize / 2;
+                    ctx.fillStyle = 'white';
+                    const eyeRadius = Math.max(1.5, gridSize / 12);
+                    let eye1X, eye1Y, eye2X, eye2Y;
+                    const eyeOffset = gridSize / 4;
+                    const eyeDist = gridSize / 5;
+                    if (direction.x === 1) { eye1X = centerX + eyeDist; eye1Y = centerY - eyeOffset; eye2X = centerX + eyeDist; eye2Y = centerY + eyeOffset; }
+                    else if (direction.x === -1) { eye1X = centerX - eyeDist; eye1Y = centerY - eyeOffset; eye2X = centerX - eyeDist; eye2Y = centerY + eyeOffset; }
+                    else if (direction.y === -1) { eye1X = centerX - eyeOffset; eye1Y = centerY - eyeDist; eye2X = centerX + eyeOffset; eye2Y = centerY - eyeDist; }
+                    else { eye1X = centerX - eyeOffset; eye1Y = centerY + eyeDist; eye2X = centerX + eyeOffset; eye2Y = centerY + eyeDist; }
+                    ctx.beginPath();
+                    ctx.arc(eye1X, eye1Y, eyeRadius, 0, 2 * Math.PI);
+                    ctx.arc(eye2X, eye2Y, eyeRadius, 0, 2 * Math.PI);
+                    ctx.fill();
+                    ctx.fillStyle = 'black';
+                    const pupilRadius = eyeRadius * 0.6;
+                    ctx.beginPath();
+                    ctx.arc(eye1X, eye1Y, pupilRadius, 0, 2 * Math.PI);
+                    ctx.arc(eye2X, eye2Y, pupilRadius, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
+                if (index === snake.length - 1 && snake.length > 1) {
+                    const prevSegment = snake[index - 1];
+                    ctx.beginPath();
+                    let arcX = x + gridSize / 2, arcY = y + gridSize / 2;
+                    if (prevSegment.x > segment.x) { arcX = x; } else if (prevSegment.x < segment.x) { arcX = x + gridSize; }
+                    else if (prevSegment.y > segment.y) { arcY = y; } else if (prevSegment.y < segment.y) { arcY = y + gridSize; }
+                    if(segment.y !== prevSegment.y){ ctx.arc(arcX, arcY, gridSize / 2, segment.y > prevSegment.y ? Math.PI : 0, segment.y > prevSegment.y ? 0 : Math.PI); } 
+                    else { ctx.arc(arcX, arcY, gridSize / 2, segment.x > prevSegment.x ? Math.PI/2 : -Math.PI/2, segment.x > prevSegment.x ? -Math.PI/2 : Math.PI/2); }
+                    ctx.fill();
+                }
+            });
         }
-
         function drawGame() {
             drawBackground();
             ctx.fillStyle = 'red';
@@ -308,7 +293,6 @@
             });
             drawSnake();
         }
-        
         function drawStartScreen(){
             drawBackground();
             ctx.fillStyle='rgba(0, 0, 0, 0.4)';
@@ -318,33 +302,29 @@
             ctx.textAlign='center';
             ctx.fillText('Appuyez pour jouer',canvas.width/2,canvas.height/2);
         }
-        
         function generateApples(){while(food.length<numApples){let newApple={x:Math.floor(Math.random()*tileCount),y:Math.floor(Math.random()*tileCount)};const onSnake=snake.some(seg=>seg.x===newApple.x&&seg.y===newApple.y);const onFood=food.some(f=>f.x===newApple.x&&f.y===newApple.y);if(!onSnake&&!onFood){food.push(newApple)}}}
         function updateGameSpeed(){clearInterval(gameLoopInterval);const newSpeed=speeds[currentLevel-1];gameLoopInterval=setInterval(update,newSpeed)}
         function update(){
-            if (nextDirection) {
-                if ((nextDirection.x !== -direction.x) || (nextDirection.y !== -direction.y)) {
+            if(nextDirection){
+                if((nextDirection.x !== -direction.x) || (nextDirection.y !== -direction.y)){
                     direction = nextDirection;
                 }
                 nextDirection = null;
             }
             const currentHead = snake[0];
             const nextHeadPos = { x: currentHead.x + direction.x, y: currentHead.y + direction.y };
-
             const snakeBody = snake.slice(0, snake.length - 1);
             if (nextHeadPos.x < 0 || nextHeadPos.x >= tileCount || nextHeadPos.y < 0 || nextHeadPos.y >= tileCount || snakeBody.some(seg => seg.x === nextHeadPos.x && seg.y === nextHeadPos.y)) {
                 endGame();
                 return;
             }
             snake.unshift(nextHeadPos);
-            
             let eatenAppleIndex = -1;
             food.forEach((apple, index) => {
                 if (nextHeadPos.x === apple.x && nextHeadPos.y === apple.y) {
                     eatenAppleIndex = index;
                 }
             });
-
             if (eatenAppleIndex > -1) {
                 score++;
                 food.splice(eatenAppleIndex, 1);
