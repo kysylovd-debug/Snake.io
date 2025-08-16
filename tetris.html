@@ -47,7 +47,6 @@
             border: 2px solid #555;
         }
 
-        /* MODIFICATION : Conteneur pour les blocs d'info (score, vitesse, etc.) */
         .info-cluster {
             display: flex;
             flex-direction: row;
@@ -66,8 +65,6 @@
         }
         .info-box p { margin: 5px 0; font-size: 1.2em; }
         .info-box span { font-size: 1.5em; color: #AED542; }
-        
-        /* Suppression des styles pour .sidebar et #best-score-box qui ne sont plus nécessaires */
         
         .controls { text-align: center; }
         .slider-container { margin-top: 10px; }
@@ -119,8 +116,6 @@
         #touch-drop { grid-area: 1 / 2 / 2 / 3; }
         #touch-rotate-right { grid-area: 1 / 3 / 2 / 4; font-size: 2em; }
         
-        /* Suppression de la media query pour la mise en page à deux colonnes */
-        
         @media (max-width: 767px) {
             .game-column > p.keyboard-instructions {
                 display: none;
@@ -168,7 +163,7 @@
             <p class="keyboard-instructions" style="font-size: 0.9em; margin-top: 15px;">Clavier : ← → ↓, Espace (Drop) | Souris: Clic G/D (Pivoter)</p>
         </div>
         
-        </div>
+    </div>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
@@ -509,7 +504,8 @@
             ctx.fillStyle = 'white';
             ctx.font = `${blockSize * 1.3}px "Courier New"`;
             ctx.textAlign = 'center';
-            const textLines = ["Press Enter", "or", "touch the screen", "to play"];
+            // MODIFICATION : Le texte est découpé en plus de lignes de 10 caractères max
+            const textLines = ["Press Enter", "or touch", "the screen", "to play"];
             textLines.forEach((line, index) => {
                 ctx.fillText(line, canvas.width / 2, canvas.height / 2 - (blockSize * (textLines.length / 2 - index - 0.5) * 1.5) );
             });
