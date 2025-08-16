@@ -368,13 +368,13 @@
                     ctx.globalAlpha = 0.7;
                     const nextPieceSize = blockSize * 0.6;
                     // MODIFICATION : Coordonnées ajustées pour le coin en haut à droite
-                    const textX = (COLS - 2) * blockSize; 
+                    const textX = (COLS - 1.5) * blockSize; 
                     const textY = 0.8 * blockSize;
                     ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
                     ctx.font = `${blockSize * 0.8}px "Courier New"`;
                     ctx.textAlign = 'center';
                     ctx.fillText('NEXT', textX, textY);
-                    drawPiece(nextPiece, {x: (COLS - 2) - nextPiece[0].length / 2, y: 1.5}, ctx, nextPieceSize);
+                    drawPiece(nextPiece, {x: (COLS - 1.5) - nextPiece[0].length / 2, y: 1.5}, ctx, nextPieceSize);
                     ctx.globalAlpha = 1.0;
                 }
             } else if (gameState === 'ANIMATING') {
