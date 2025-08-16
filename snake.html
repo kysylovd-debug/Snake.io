@@ -1,1 +1,295 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Jeu du Serpent v2</title>
+    <style>
+        :root { --game-size: 884px; }
+        body {
+            background-color: #1a1a1a;
+            color: #fff;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px 0;
+            box-sizing: border-box;
+            overscroll-behavior: none;
+        }
+        .game-wrapper {
+            position: relative;
+            width: var(--game-size);
+            height: var(--game-size);
+            max-width: 95vw;
+            max-height: 95vw;
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+            border: 2px solid #555;
+            box-sizing: border-box;
+            image-rendering: pixelated;
+        }
+        .controls {
+            text-align: center;
+            margin-top: 15px;
+            width: 400px;
+            max-width: 95vw;
+        }
+        p { margin: 5px 0; font-size: 1.2em; }
+        .slider-container { margin-top: 10px; }
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8em;
+            padding: 0 5px;
+            box-sizing: border-box;
+            margin-bottom: 2px;
+        }
+        input[type="range"] {
+            -webkit-appearance: none; appearance: none;
+            width: 100%; height: 15px; background: #555;
+            border-radius: 5px; outline: none; opacity: 0.7;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none;
+            width: 25px; height: 25px; background: #6495ED;
+            border: 2px solid white; border-radius: 50%; cursor: pointer;
+        }
+        #appleSlider::-webkit-slider-thumb { background: red; }
+        #replayButton {
+            display: none; position: absolute;
+            top: 60%; left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10; padding: 15px 30px;
+            font-size: 1.5em; font-family: 'Courier New', Courier, monospace;
+            color: white; background-color: #008CBA;
+            border: 3px solid white; border-radius: 8px;
+            cursor: pointer;
+        }
+        #touch-controls {
+            display: none;
+            position: relative;
+            margin: 20px auto 10px auto;
+            width: 150px;
+            height: 150px;
+        }
+        .touch-btn {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background-color: rgba(255, 255, 255, 0.7);
+            border-radius: 10px;
+        }
+        #touch-up { top: 0; left: 50px; }
+        #touch-down { bottom: 0; left: 50px; }
+        #touch-left { top: 50px; left: 0; }
+        #touch-right { top: 50px; right: 0; }
+    </style>
+</head>
+<body>
+    <h1>SNAKE</h1>
+    <div class="game-wrapper" id="game-wrapper">
+        <canvas id="gameCanvas"></canvas>
+        <button id="replayButton">Rejouer</button>
+    </div>
+    <div id="touch-controls">
+        <div id="touch-up" class="touch-btn"></div>
+        <div id="touch-down" class="touch-btn"></div>
+        <div id="touch-left" class="touch-btn"></div>
+        <div id="touch-right" class="touch-btn"></div>
+    </div>
+    <div class="controls">
+        <p>Score: <span id="score">0</span></p>
+        <div class="slider-container">
+            <p style="margin-bottom: 0;">Vitesse de départ:</p>
+            <div class="slider-labels"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span></div>
+            <input type="range" id="speedSlider" min="1" max="10" value="4">
+        </div>
+        <div class="slider-container">
+            <p style="margin-bottom: 0;">Nombre de pommes:</p>
+            <div class="slider-labels"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
+            <input type="range" id="appleSlider" min="1" max="5" value="1">
+        </div>
+        <p style="font-size: 0.9em; margin-top: 15px;">Utilisez les flèches ou ZQSD</p>
+    </div>
 
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const wrapper = document.getElementById('game-wrapper');
+        const tileCount = 22;
+        let gridSize; 
+        
+        const textures = {
+            apple: new Image(), head_up: new Image(), head_down: new Image(), head_left: new Image(), head_right: new Image(),
+            tail_up: new Image(), tail_down: new Image(), tail_left: new Image(), tail_right: new Image(),
+            body_vertical: new Image(), body_horizontal: new Image(),
+            body_topleft: new Image(), body_topright: new Image(), body_bottomleft: new Image(), body_bottomright: new Image()
+        };
+        textures.apple.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAKtJREFUOE+t07ENgzAUhOFvo1RCVESEjBHRgTqgA1B0BGeiQ6ACqpKk7YwHi/0Dac5/cmBLGI8PoPcqhC7g2505cZtPlZGAgI/pM82kTCGgvRHgZk1sA5Mv2wI+v/MNT7/d5y/a+Y/qjW2B5z/D4wYskb4sY8A2Gfs5JIAuM1K1f0DkTy3jgA7j5b2/gGXK5Z1xATB5u1f4/d4wO2N7APe8bQt4Bvz/L6D/gH8A/wD+gB9iXwB/AHz/f0BvK4C2E0A7L4B2D/D6pfEDvIBoQ2G6AAAAAElFTSuQmCC';
+        textures.head_up.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA0AAAAQCAYAAADNo/U5AAAAAXNSR0IArs4c6QAAAHhJREFUOE9jZKAQMJKkof///yM1MHgBifF/gqA8iG/g4ubz+/9/QhISGgM1cQCk/0+i/r/p/78Z/L8B6T8T//+f+M9k4P9/Nv//P/B/gPF/Dvj/X8L/gKz/T6T+P7D9fwD5/xP9/5/h/8+A/z8T/h/g//9f+P/fC//39GC4DgMAm4A+Vv0BwYkAAAAASUVORK5CYII=';
+        textures.head_down.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA0AAAAQCAYAAADNo/U5AAAAAXNSR0IArs4c6QAAAHBJREFUOE9jZKAQMFKonvEfl/H/JxISEsIIFeIIFGAiKkxfgKT/T6T+v2n+/5/B/z8D+f8T/f+f4f/PgP8/E/4f4P//X/j/3wv/9/QB5P9P9P9/hv8/A/7/TIRfYIY4QgFp/xPp/5/m/4/+/w//9wAAVdM/c0l/pWAAAAAASUVORK5CYII=';
+        textures.head_left.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAANCAYAAACgu+4kAAAAAXNSR0IArs4c6QAAAIlJREFUOE9jZKAQMJKkof///6M0A5+BgZkE8X8gE/+AmYGFgZkE+f8Tqf9fkv//M/z/WST8/xnx/2fA/58J/38G/P8Pif8fmfj/PzP//z/h/8/4//8X/u/vQf7/hKT/T6L+P9P//xmYGBgZkP8/kYGBCca/RBr/M1kYAGoMAODrPxR1b9hDAAAAAElFTSuQmCC';
+        textures.head_right.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAANCAYAAACgu+4kAAAAAXNSR0IArs4c6QAAAIdJREFUOE9jZKAQMJKkof///yM1MAb+M/z/WST8/xnx/2fA/58J/38G/P8Pif8fmfj/PzP//z/h/8/4//8X/u/vA4MBNgYjMPz/P5GBgQnGv0QajM3gAyKk/0+i/r/p/v+M3Ab+gZkZkP8/kYGBCSYD/4BM/AFmBiYAABhPP0/vVwW3AAAAAElFTSuQmCC';
+        textures.tail_up.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAcAAAAMCAYAAACulacQAAAAAXNSR0IArs4c6QAAADhJREFUOE9jZEAD////Gf7//z/BwMCYwIqBicGCgYnhhIGJ4ZeBiSGf4R+X8f//MgBJAABeXh8K5B4yXgAAAABJRU5ErkJggg==';
+        textures.tail_down.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAcAAAAMCAYAAACulacQAAAAAXNSR0IArs4c6QAAADFJREFUOE9jZCAD////M/xH5fz/fxYDAwNjAisGJgYLBiaGEwYmhncGJgYhDAwMzAAkAQB35R4K+j/bAAAAAElFTSuQmCC';
+        textures.tail_left.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAHCAYAAAA8T9gOAAAAAXNSR0IArs4c6QAAADhJREFUOE9jZEAD////Gf7//z/BwMDYgJVAxODHQMTgx0DE4MdAxODEQMTg5wz/kfz//////w+TAUgCAF2XHwo3bBw+AAAAAElFTSuQmCC';
+        textures.tail_right.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAHCAYAAAA8T9gOAAAAAXNSR0IArs4c6QAAADZJREFUOE9jZCAD////M/xH5fz/fxYDA2MDKwYnBicGJwYnBicGJwYnhicG5wz/kfz//z8lAJAFAFh7Hwpfe9MTAAAAAElFTSuQmCC';
+        textures.body_vertical.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAQCAYAAADXnxW3AAAAAXNSR0IArs4c6QAAAA5JREFUOE9j+A+FL/4PBgAJAgP+4W25aAAAAABJRU5ErkJggg==';
+        textures.body_horizontal.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAABCAYAAAD4Xf8/AAAAAXNSR0IArs4c6QAAAA5JREFUOE9j+A+Ff/4PBgAJAgP+iL0KdgAAAABJRU5ErkJggg==';
+        textures.body_topleft.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAAAXNSR0IArs4c6QAAAD9JREFUOE9jZEAD////hv///w8YgJVAxODHQMTgx0DE4MdAxODEQMTgx0DE4MdAxODEwMTg5wz/kfz/Px5kAxQDAN7jKBUA3EaJAAAAAElFTSuQmCC';
+        textures.body_topright.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAAAXNSR0IArs4c6QAAAD5JREFUOE9jZCAD////hv///w8YgJVAxODEQMTgx0DE4MdAxODEQMTgx0DE4MdAxODEQMTg5wz/kfz/P5UEUgwAAGYFKBU6L22VAAAAAElFTSuQmCC';
+        textures.body_bottomleft.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAAAXNSR0IArs4c6QAAAEFJREFUOE9jZEAD////hv///w8YgJVAxODHQMTgx0DE4MdAxODEQMTgx0DE4MdAxODEQMTg5wz/kfz/Pw9yA5sBSQAAe2IpCgC4/xAAAAAASUVORK5CYII=';
+        textures.body_bottomright.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAAAXNSR0IArs4c6QAAAD9JREFUOE9jZCAD////hv///w8YgJVAxODEQMTgx0DE4MdAxODEQMTgx0DE4MdAxODEQMTg5wz/kfz/P5UE2wxIAgBc3ikV++fPtgAAAABJRU5ErkJggg==';
+
+        const scoreElement = document.getElementById('score');
+        const speedSlider = document.getElementById('speedSlider');
+        const appleSlider = document.getElementById('appleSlider');
+        const replayButton = document.getElementById('replayButton');
+        let snake, food, direction, score, gameStarted, gameLoopInterval, currentLevel, numApples;
+        let nextDirection = null;
+        let countdownActive = false;
+        const maxLevel = 10;
+        const speeds = [150, 140, 130, 120, 110, 100, 95, 90, 85, 80]; 
+        const scorePerLevel = 2;
+
+        function resizeCanvas() {
+            const size = Math.min(wrapper.clientWidth, wrapper.clientHeight);
+            canvas.width = size;
+            canvas.height = size;
+            gridSize = canvas.width / tileCount;
+            if (!gameStarted) {
+                drawStartScreen();
+            } else {
+                drawGame();
+            }
+        }
+
+        // MODIFICATION: Le serpent démarre avec 2 segments
+        function initGameVariables() {
+            const startX = Math.floor(tileCount / 2);
+            const startY = Math.floor(tileCount / 2);
+            snake = [
+                { x: startX, y: startY },     // Tête
+                { x: startX - 1, y: startY }  // Queue
+            ];
+            food = [];
+            direction = 'right';
+            nextDirection = 'right';
+            score = 0;
+            gameStarted = false;
+            gameLoopInterval = null;
+            currentLevel = parseInt(speedSlider.value, 10);
+            numApples = parseInt(appleSlider.value, 10);
+            scoreElement.textContent = score;
+        }
+        
+        function drawBackground() {
+            const color1 = '#AED542';
+            const color2 = '#A4D13D';
+            for (let i = 0; i < tileCount; i++) {
+                for (let j = 0; j < tileCount; j++) {
+                    ctx.fillStyle = (i + j) % 2 === 0 ? color1 : color2;
+                    ctx.fillRect(i * gridSize, j * gridSize, gridSize, gridSize);
+                }
+            }
+        }
+        
+        function drawSnake() {
+            if (!snake || snake.length === 0) return;
+            for (let i = 0; i < snake.length; i++) {
+                const segment = snake[i];
+                const x = segment.x * gridSize;
+                const y = segment.y * gridSize;
+                let texture;
+
+                if (i === 0) {
+                    if (direction === 'up') texture = textures.head_up;
+                    else if (direction === 'down') texture = textures.head_down;
+                    else if (direction === 'left') texture = textures.head_left;
+                    else if (direction === 'right') texture = textures.head_right;
+                } else if (i === snake.length - 1) {
+                    const prev = snake[i - 1];
+                    if (segment.y > prev.y) texture = textures.tail_up;
+                    else if (segment.y < prev.y) texture = textures.tail_down;
+                    else if (segment.x > prev.x) texture = textures.tail_left;
+                    else if (segment.x < prev.x) texture = textures.tail_right;
+                } else {
+                    const prev = snake[i - 1];
+                    const next = snake[i + 1];
+                    if (prev.x === next.x) {
+                        texture = textures.body_vertical;
+                    } else if (prev.y === next.y) {
+                        texture = textures.body_horizontal;
+                    } else {
+                        if ((prev.y < segment.y && next.x > segment.x) || (prev.x > segment.x && next.y < segment.y)) texture = textures.body_topright;
+                        else if ((prev.y < segment.y && next.x < segment.x) || (prev.x < segment.x && next.y < segment.y)) texture = textures.body_topleft;
+                        else if ((prev.y > segment.y && next.x > segment.x) || (prev.x > segment.x && next.y > segment.y)) texture = textures.body_bottomright;
+                        else if ((prev.y > segment.y && next.x < segment.x) || (prev.x < segment.x && next.y > segment.y)) texture = textures.body_bottomleft;
+                    }
+                }
+                if (texture && texture.complete) {
+                    ctx.drawImage(texture, x, y, gridSize, gridSize);
+                }
+            }
+        }
+
+        function drawGame() {
+            drawBackground();
+            food.forEach(apple => {
+                ctx.drawImage(textures.apple, apple.x * gridSize, apple.y * gridSize, gridSize, gridSize);
+            });
+            drawSnake();
+        }
+        
+        function drawStartScreen(){
+            drawBackground();
+            ctx.fillStyle='rgba(0, 0, 0, 0.4)';
+            ctx.fillRect(0,0,canvas.width,canvas.height);
+            ctx.fillStyle='white';
+            ctx.font=`${gridSize*1.5}px "Courier New"`;
+            ctx.textAlign='center';
+            ctx.fillText('Appuyez pour jouer',canvas.width/2,canvas.height/2);
+        }
+        
+        function generateApples(){while(food.length<numApples){let newApple={x:Math.floor(Math.random()*tileCount),y:Math.floor(Math.random()*tileCount)};const onSnake=snake.some(seg=>seg.x===newApple.x&&seg.y===newApple.y);const onFood=food.some(f=>f.x===newApple.x&&f.y===newApple.y);if(!onSnake&&!onFood){food.push(newApple)}}}
+        function updateGameSpeed(){clearInterval(gameLoopInterval);const newSpeed=speeds[currentLevel-1];gameLoopInterval=setInterval(update,newSpeed)}
+        function update(){if(nextDirection){direction=nextDirection;nextDirection=null}
+const head={x:snake[0].x,y:snake[0].y};switch(direction){case'up':head.y--;break;case'down':head.y++;break;case'left':head.x--;break;case'right':head.x++;break}
+if(head.x<0||head.x>=tileCount||head.y<0||head.y>=tileCount||snake.some(seg=>seg.x===head.x&&seg.y===head.y)){endGame();return}
+snake.unshift(head);let eatenAppleIndex=-1;food.forEach((apple,index)=>{if(head.x===apple.x&&head.y===apple.y){eatenAppleIndex=index}});if(eatenAppleIndex>-1){score++;scoreElement.textContent=score;food.splice(eatenAppleIndex,1);generateApples();const newLevel=Math.min(maxLevel,Math.floor(score/scorePerLevel)+1);if(newLevel>currentLevel){currentLevel=newLevel;speedSlider.value=currentLevel;updateGameSpeed()}}else{snake.pop()}
+drawGame()}
+        function endGame(){
+            clearInterval(gameLoopInterval);
+            drawGame();
+            ctx.fillStyle='rgba(0,0,0,0.7)';
+            ctx.fillRect(0,0,canvas.width,canvas.height);
+            ctx.fillStyle='white';
+            ctx.font=`${gridSize*2.5}px "Courier New"`;
+            ctx.textAlign='center';
+            ctx.fillText('GAME OVER',canvas.width/2,canvas.height/2);
+            replayButton.style.display='block';
+        }
+        function handleKeyPress(e){if(countdownActive)return;if(!gameStarted){startGame();return}
+const key=e.key.toLowerCase();if((key==='arrowup'||key==='z'||key==='w')&&direction!=='down')nextDirection='up';if((key==='arrowdown'||key==='s')&&direction!=='up')nextDirection='down';if((key==='arrowleft'||key==='q'||key==='a')&&direction!=='right')nextDirection='left';if((key==='arrowright'||key==='d')&&direction!=='left')nextDirection='right'}
+        function startGame(){if(gameStarted)return;gameStarted=true;countdownActive=true;currentLevel=parseInt(speedSlider.value,10);numApples=parseInt(appleSlider.value,10);speedSlider.disabled=true;appleSlider.disabled=true;generateApples();let countdown=3;const countdownInterval=setInterval(()=>{drawGame();if(countdown>0){ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle='white';ctx.font=`${gridSize*7}px "Courier New"`;ctx.textAlign='center';ctx.fillText(countdown,canvas.width/2,canvas.height/2+gridSize*2);countdown--}else{clearInterval(countdownInterval);countdownActive=false;updateGameSpeed()}},1000)}
+        function resetGame(){replayButton.style.display='none';speedSlider.disabled=false;appleSlider.disabled=false;initGameVariables();resizeCanvas();drawStartScreen()}
+        function setupTouchControls(){const isTouchDevice=('ontouchstart'in window)||(navigator.maxTouchPoints>0);if(!isTouchDevice)return;document.getElementById('touch-controls').style.display='block';const up=document.getElementById('touch-up'),down=document.getElementById('touch-down'),left=document.getElementById('touch-left'),right=document.getElementById('touch-right');const handleTouch=(e,newDirection)=>{e.preventDefault();if(countdownActive)return;if(!gameStarted)startGame();if(newDirection==='up'&&direction!=='down')nextDirection='up';if(newDirection==='down'&&direction!=='up')nextDirection='down';if(newDirection==='left'&&direction!=='right')nextDirection='left';if(newDirection==='right'&&direction!=='left')nextDirection='right'}
+up.addEventListener('touchstart',(e)=>handleTouch(e,'up'),{passive:false});down.addEventListener('touchstart',(e)=>handleTouch(e,'down'),{passive:false});left.addEventListener('touchstart',(e)=>handleTouch(e,'left'),{passive:false});right.addEventListener('touchstart',(e)=>handleTouch(e,'right'),{passive:false})}
+
+        window.addEventListener('DOMContentLoaded', (event) => {
+            initGameVariables();
+            resizeCanvas();
+            drawStartScreen();
+            setupTouchControls();
+        });
+        window.addEventListener('resize', resizeCanvas);
+        document.addEventListener('keydown', handleKeyPress);
+        replayButton.addEventListener('click', resetGame);
+    </script>
+</body>
+</html>
