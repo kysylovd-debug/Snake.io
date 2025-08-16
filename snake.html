@@ -20,12 +20,6 @@
             box-sizing: border-box;
         }
         
-        h1 {
-            font-size: 3em;
-            margin-bottom: 20px;
-        }
-        
-        /* Conteneur principal pour la disposition PC / Mobile */
         .page-content {
             display: flex;
             flex-direction: column; /* Mobile d'abord: tout en colonne */
@@ -37,6 +31,12 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+        }
+
+        h1 {
+            font-size: 3em;
+            margin: 0;
+            margin-bottom: 20px;
         }
 
         .game-wrapper {
@@ -124,7 +124,7 @@
         @media (min-width: 1250px) {
             .page-content {
                 flex-direction: row; /* Met les colonnes côte à côte */
-                align-items: flex-start;
+                align-items: center; /* Aligne verticalement au centre */
                 gap: 30px;
             }
             .scores-container {
