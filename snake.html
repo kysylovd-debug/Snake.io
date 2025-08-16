@@ -13,7 +13,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center; /* Pour centrer verticalement */
+            justify-content: center;
             min-height: 100vh;
             margin: 0;
             padding: 20px 0;
@@ -26,11 +26,28 @@
             margin-bottom: 20px;
         }
 
-        .main-container {
+        /* NOUVEAU: Conteneur pour les scores en haut */
+        .scores-container {
             display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 20px;
+            gap: 20px; /* Espace entre les deux boîtes de score */
+            margin-bottom: 20px;
+        }
+
+        .score-box {
+            background-color: #2a2a2a;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 2px solid #555;
+            text-align: center;
+            width: 180px; /* Largeur fixe pour l'alignement */
+        }
+        .score-box p {
+            margin: 5px 0;
+            font-size: 1.2em;
+        }
+        .score-box span {
+            font-size: 1.5em;
+            color: #AED542;
         }
 
         .game-wrapper {
@@ -46,26 +63,6 @@
             border: 2px solid #555;
             box-sizing: border-box;
         }
-
-        .sidebar {
-            text-align: center;
-            font-size: 1.5em;
-        }
-        .score-box {
-            background-color: #2a2a2a;
-            padding: 10px 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border: 2px solid #555;
-        }
-        .score-box p {
-            margin: 5px 0;
-        }
-        .score-box span {
-            font-size: 1.5em;
-            color: #AED542;
-        }
-
         .controls {
             text-align: center;
             width: 400px;
@@ -117,56 +114,46 @@
         #touch-up { top: 0; left: 50px; } #touch-down { bottom: 0; left: 50px; }
         #touch-left { top: 50px; left: 0; } #touch-right { top: 50px; right: 0; }
         
-        @media (min-width: 1350px) {
-            .main-container {
-                flex-direction: row;
-                align-items: center; /* Aligne verticalement le jeu et le panneau de score */
-            }
-            .sidebar {
-                text-align: left;
-            }
-        }
     </style>
 </head>
 <body>
+    <div class="scores-container">
+        <div class="score-box">
+            <p>SCORE</p>
+            <span id="current-score">0</span>
+        </div>
+        <div class="score-box">
+            <p>MEILLEUR SCORE</p>
+            <span id="high-score">0</span>
+        </div>
+    </div>
+
     <h1>SNAKE</h1>
-    <div class="main-container">
-        <div class="game-and-controls">
-            <div class="game-wrapper" id="game-wrapper">
-                <canvas id="gameCanvas"></canvas>
-                <button id="replayButton">Rejouer</button>
-            </div>
-            <div id="touch-controls">
-                <div id="touch-up" class="touch-btn"></div>
-                <div id="touch-down" class="touch-btn"></div>
-                <div id="touch-left" class="touch-btn"></div>
-                <div id="touch-right" class="touch-btn"></div>
-            </div>
-            <div class="controls">
-                <div class="slider-container">
-                    <p style="margin-bottom: 0;">Vitesse de départ:</p>
-                    <div class="slider-labels"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span></div>
-                    <input type="range" id="speedSlider" min="1" max="10" value="4">
-                </div>
-                <div class="slider-container">
-                    <p style="margin-bottom: 0;">Nombre de pommes:</p>
-                    <div class="slider-labels"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
-                    <input type="range" id="appleSlider" min="1" max="5" value="1">
-                </div>
-                <p style="font-size: 0.9em; margin-top: 15px;">Utilisez les flèches ou ZQSD</p>
-            </div>
+
+    <div class="game-wrapper" id="game-wrapper">
+        <canvas id="gameCanvas"></canvas>
+        <button id="replayButton">Rejouer</button>
+    </div>
+    
+    <div id="touch-controls">
+        <div id="touch-up" class="touch-btn"></div>
+        <div id="touch-down" class="touch-btn"></div>
+        <div id="touch-left" class="touch-btn"></div>
+        <div id="touch-right" class="touch-btn"></div>
+    </div>
+
+    <div class="controls">
+        <div class="slider-container">
+            <p style="margin-bottom: 0;">Vitesse de départ:</p>
+            <div class="slider-labels"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span></div>
+            <input type="range" id="speedSlider" min="1" max="10" value="4">
         </div>
-        
-        <div class="sidebar">
-            <div class="score-box">
-                <p>SCORE</p>
-                <span id="current-score">0</span>
-            </div>
-            <div class="score-box">
-                <p>MEILLEUR SCORE</p>
-                <span id="high-score">0</span>
-            </div>
+        <div class="slider-container">
+            <p style="margin-bottom: 0;">Nombre de pommes:</p>
+            <div class="slider-labels"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
+            <input type="range" id="appleSlider" min="1" max="5" value="1">
         </div>
+        <p style="font-size: 0.9em; margin-top: 15px;">Utilisez les flèches ou ZQSD</p>
     </div>
 
     <script>
@@ -242,7 +229,7 @@
                 
                 ctx.fillRect(x, y, gridSize, gridSize);
 
-                if (index === 0) { // Tête
+                if (index === 0) {
                     ctx.beginPath();
                     let arcX = x + gridSize / 2, arcY = y + gridSize / 2;
                     if (direction.x === 1) { arcX = x + gridSize; } else if (direction.x === -1) { arcX = x; }
@@ -275,7 +262,6 @@
                     ctx.arc(eye2X, eye2Y, pupilRadius, 0, 2 * Math.PI);
                     ctx.fill();
 
-                    // Langue
                     ctx.strokeStyle = 'red';
                     ctx.lineWidth = Math.max(1, gridSize / 15);
                     ctx.beginPath();
@@ -291,7 +277,7 @@
                     ctx.moveTo(midX, midY); ctx.lineTo(tip2X, tip2Y);
                     ctx.stroke();
                 }
-                if (index === snake.length - 1 && snake.length > 1) { // Queue
+                if (index === snake.length - 1 && snake.length > 1) {
                     const prevSegment = snake[index - 1];
                     ctx.beginPath();
                     let arcX = x + gridSize / 2, arcY = y + gridSize / 2;
@@ -378,7 +364,7 @@
         }
         function startGame(){if(gameStarted)return;gameStarted=true;countdownActive=true;currentLevel=parseInt(speedSlider.value,10);numApples=parseInt(appleSlider.value,10);speedSlider.disabled=true;appleSlider.disabled=true;generateApples();let countdown=3;const countdownInterval=setInterval(()=>{drawGame();if(countdown>0){ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle='white';ctx.font=`${gridSize*7}px "Courier New"`;ctx.textAlign='center';ctx.fillText(countdown,canvas.width/2,canvas.height/2+gridSize*2);countdown--}else{clearInterval(countdownInterval);countdownActive=false;updateGameSpeed()}},1000)}
         function resetGame(){replayButton.style.display='none';speedSlider.disabled=false;appleSlider.disabled=false;initGameVariables();resizeCanvas();drawStartScreen()}
-        function setupTouchControls(){const isTouchDevice=('ontouchstart'in window)||(navigator.maxTouchPoints>0);if(!isTouchDevice)return;document.getElementById('touch-controls').style.display='block';const up=document.getElementById('touch-up'),down=document.getElementById('touch-down'),left=document.getElementById('touch-left'),right=document.getElementById('touch-right');const handleTouch=(e,newDir)=>{e.preventDefault();if(countdownActive)return;if(!gameStarted)startGame();nextDirection = newDir;}
+        function setupTouchControls(){const isTouchDevice=('ontouchstart'in window)||(navigator.maxTouchPoints>0);if(!isTouchDevice)return;document.getElementById('touch-controls').style.display='block';const up=document.getElementById('touch-up'),down=document.getElementById('touch-down'),left=document.getElementById('touch-left'),right=document.getElementById('touch-right');const handleTouch=(e,newDir)=>{e.preventDefault();if(countdownActive)return;if(!gameStarted)startGame();if(newDir.y === 0 && direction.y !== 0) nextDirection = newDir; if(newDir.x === 0 && direction.x !== 0) nextDirection = newDir;}
 up.addEventListener('touchstart',(e)=>handleTouch(e,{x:0,y:-1}),{passive:false});down.addEventListener('touchstart',(e)=>handleTouch(e,{x:0,y:1}),{passive:false});left.addEventListener('touchstart',(e)=>handleTouch(e,{x:-1,y:0}),{passive:false});right.addEventListener('touchstart',(e)=>handleTouch(e,{x:1,y:0}),{passive:false})}
         function setupSliderTouch(){const sliders=[speedSlider,appleSlider];const e=e=>{const t=e.target;e.preventDefault();const n=t.getBoundingClientRect(),o=e.touches[0],l=o.clientX-n.left,i=Math.max(0,Math.min(1,l/n.width)),d=parseFloat(t.min),a=parseFloat(t.max);t.value=Math.round(d+(a-d)*i)};sliders.forEach(t=>{t.addEventListener("touchstart",e,{passive:!1}),t.addEventListener("touchmove",e,{passive:!1})})}
 
