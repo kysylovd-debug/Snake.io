@@ -45,6 +45,7 @@
             width: 100%;
             height: 100%;
             border: 2px solid #555;
+            cursor: pointer;
         }
         .sidebar {
             display: flex;
@@ -115,6 +116,7 @@
         #touch-drop { grid-area: 1 / 2 / 2 / 3; }
         #touch-rotate-right { grid-area: 1 / 3 / 2 / 4; font-size: 2em; }
         
+
         @media (min-width: 700px) {
             .page-content {
                 flex-direction: row;
@@ -126,11 +128,6 @@
             }
             .game-column {
                 order: 1;
-            }
-        }
-         @media (max-width: 699px) {
-            .game-column > p.keyboard-instructions {
-                display: none;
             }
         }
     </style>
@@ -182,7 +179,7 @@
         const speedSlider = document.getElementById('speedSlider');
         const replayButton = document.getElementById('replayButton');
 
-        const COLS = 10; const ROWS = 20; let blockSize;
+        const COLS = 11; const ROWS = 20; let blockSize;
 
         const COLORS = [ null, '#33C7DE', '#2A64D9', '#E6994C', '#E6D84C', '#6AE64C', '#A94CE6', '#E64C4C' ];
         const SHAPES = [ [], [[1,1,1,1]], [[2,0,0],[2,2,2]], [[0,0,3],[3,3,3]], [[4,4],[4,4]], [[0,5,5],[5,5,0]], [[0,6,0],[6,6,6]], [[7,7,0],[0,7,7]] ];
@@ -194,7 +191,6 @@
         let dropCounter = 0; let dropInterval = 1000;
         let lastTime = 0; let gameState = 'START';
         let countdownActive = false; let animationFrameId;
-        let linesToClear = [];
 
         function resizeGame() {
             const wrapper = document.getElementById('game-wrapper');
@@ -259,18 +255,17 @@
         }
 
         function clearLines() {
-            let clearedCount = 0;
+            let linesCleared = 0;
             outer: for (let y = ROWS - 1; y >= 0; y--) {
                 for (let x = 0; x < COLS; x++) { if (playfield[y][x] === 0) continue outer; }
-                linesToClear.push(y + clearedCount);
                 playfield.splice(y, 1);
-                clearedCount++;
+                linesCleared++;
             }
-            if (clearedCount > 0) {
+            if (linesCleared > 0) {
                 while(playfield.length < ROWS) playfield.unshift(Array(COLS).fill(0));
-                score += clearedCount * 10 * clearedCount;
+                score += linesCleared * 10 * linesCleared;
                 level = Math.floor(score / 100) + parseInt(speedSlider.value);
-                dropInterval = 1000 / level;
+                dropInterval = 1000 / (level * 1.5);
             }
         }
         
@@ -278,26 +273,19 @@
             if (isValidMove(player.piece, 0, 1)) {
                 player.y++;
             } else {
-                placePieceAndCheckLines();
+                placePiece();
+                clearLines();
+                playerReset();
+                if (!isValidMove(player.piece, 0, 0)) {
+                    gameState = 'GAME_OVER';
+                    replayButton.style.display = 'block';
+                    if (score > highScore) {
+                        highScore = score;
+                        localStorage.setItem('tetrisHighScore', highScore);
+                    }
+                }
             }
             dropCounter = 0;
-        }
-
-        function placePieceAndCheckLines() {
-            placePiece();
-            linesToClear = [];
-            clearLines();
-            if(linesToClear.length > 0) {
-                gameState = 'ANIMATING';
-                setTimeout(() => {
-                    gameState = 'PLAYING';
-                    playerReset();
-                    if (!isValidMove(player.piece, 0, 0)) gameState = 'GAME_OVER';
-                }, 500); // Durée de l'animation
-            } else {
-                playerReset();
-                if (!isValidMove(player.piece, 0, 0)) gameState = 'GAME_OVER';
-            }
         }
         
         function playerMove(offset) { if (isValidMove(player.piece, offset, 0)) player.x += offset; }
@@ -312,12 +300,16 @@
             const deltaTime = time - lastTime;
             lastTime = time;
             dropCounter += deltaTime;
-            if (dropCounter > dropInterval) {
-                 if (isValidMove(player.piece, 0, 1)) {
+
+            if (!isValidMove(player.piece, 0, 1)) {
+                 placePiece();
+                 clearLines();
+                 playerReset();
+                 if (!isValidMove(player.piece, 0, 0)) gameState = 'GAME_OVER';
+            } else {
+                if (dropCounter > dropInterval) {
                     player.y++;
                     dropCounter = 0;
-                } else {
-                    placePieceAndCheckLines();
                 }
             }
         }
@@ -378,11 +370,6 @@
                     ctx.fillText('NEXT', (COLS - 2) * blockSize, 1 * blockSize);
                     ctx.globalAlpha = 1.0;
                 }
-            } else if (gameState === 'ANIMATING') {
-                linesToClear.forEach(y => {
-                    ctx.fillStyle = 'white';
-                    ctx.fillRect(0, y * blockSize, canvas.width, blockSize);
-                });
             }
             currentScoreElement.textContent = score;
             highScoreElement.textContent = highScore;
@@ -496,7 +483,7 @@
             ctx.fillStyle = 'white';
             ctx.font = `${blockSize * 1.3}px "Courier New"`;
             ctx.textAlign = 'center';
-            const textLines = ["Appuyez sur Entrée", "ou", "touchez l'écran", "pour jouer"];
+            const textLines = ["Appuyez sur", "Entrée", "ou touchez", "l'écran"];
             textLines.forEach((line, index) => {
                 ctx.fillText(line, canvas.width / 2, canvas.height / 2 - (blockSize * (textLines.length / 2 - index - 0.5) * 1.5) );
             });
