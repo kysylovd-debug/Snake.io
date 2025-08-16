@@ -31,7 +31,7 @@
             height: 100%;
             border: 2px solid #555;
             box-sizing: border-box;
-            image-rendering: pixelated;
+            image-rendering: pixelated; /* Garde le style pixel-art net */
         }
         .controls {
             text-align: center;
@@ -124,6 +124,12 @@
         const tileCount = 22;
         let gridSize; 
         
+        const textures = {
+            apple: new Image(), head_up: new Image(), head_down: new Image(), head_left: new Image(), head_right: new Image(),
+            tail_up: new Image(), tail_down: new Image(), tail_left: new Image(), tail_right: new Image(),
+            body_vertical: new Image(), body_horizontal: new Image(),
+            body_topleft: new Image(), body_topright: new Image(), body_bottomleft: new Image(), body_bottomright: new Image()
+        };
         const scoreElement = document.getElementById('score');
         const speedSlider = document.getElementById('speedSlider');
         const appleSlider = document.getElementById('appleSlider');
@@ -172,75 +178,51 @@
         }
         
         function drawSnake() {
-            snake.forEach((segment, index) => {
-                ctx.fillStyle = '#6495ED';
+            if (!snake || snake.length === 0) return;
+            for (let i = 0; i < snake.length; i++) {
+                const segment = snake[i];
                 const x = segment.x * gridSize;
                 const y = segment.y * gridSize;
-                ctx.fillRect(x, y, gridSize, gridSize);
-                if (index === 0) {
-                    ctx.beginPath();
-                    let arcX = x + gridSize / 2, arcY = y + gridSize / 2;
-                    if (direction === 'right') { arcX = x + gridSize; } else if (direction === 'left') { arcX = x; }
-                    else if (direction === 'up') { arcY = y; } else if (direction === 'down') { arcY = y + gridSize; }
-                    if(direction === 'up' || direction === 'down'){ ctx.arc(arcX, arcY, gridSize / 2, direction === 'up' ? Math.PI : 0, direction === 'up' ? 0 : Math.PI); } 
-                    else { ctx.arc(arcX, arcY, gridSize / 2, direction === 'left' ? Math.PI/2 : -Math.PI/2, direction === 'left' ? -Math.PI/2 : Math.PI/2); }
-                    ctx.fill();
-                    const centerX = x + gridSize / 2;
-                    const centerY = y + gridSize / 2;
-                    ctx.fillStyle = 'white';
-                    const eyeRadius = Math.max(1.5, gridSize / 12);
-                    let eye1X, eye1Y, eye2X, eye2Y;
-                    const eyeOffset = gridSize / 4;
-                    const eyeDist = gridSize / 5;
-                    if (direction === 'right') { eye1X = centerX + eyeDist; eye1Y = centerY - eyeOffset; eye2X = centerX + eyeDist; eye2Y = centerY + eyeOffset; }
-                    else if (direction === 'left') { eye1X = centerX - eyeDist; eye1Y = centerY - eyeOffset; eye2X = centerX - eyeDist; eye2Y = centerY + eyeOffset; }
-                    else if (direction === 'up') { eye1X = centerX - eyeOffset; eye1Y = centerY - eyeDist; eye2X = centerX + eyeOffset; eye2Y = centerY - eyeDist; }
-                    else { eye1X = centerX - eyeOffset; eye1Y = centerY + eyeDist; eye2X = centerX + eyeOffset; eye2Y = centerY + eyeDist; }
-                    ctx.beginPath();
-                    ctx.arc(eye1X, eye1Y, eyeRadius, 0, 2 * Math.PI);
-                    ctx.arc(eye2X, eye2Y, eyeRadius, 0, 2 * Math.PI);
-                    ctx.fill();
-                    ctx.fillStyle = 'black';
-                    const pupilRadius = eyeRadius * 0.6;
-                    ctx.beginPath();
-                    ctx.arc(eye1X, eye1Y, pupilRadius, 0, 2 * Math.PI);
-                    ctx.arc(eye2X, eye2Y, pupilRadius, 0, 2 * Math.PI);
-                    ctx.fill();
-                    ctx.strokeStyle = 'red';
-                    ctx.lineWidth = Math.max(1, gridSize / 15);
-                    ctx.beginPath();
-                    const tongueLength = gridSize / 3;
-                    const tongueOffset = gridSize / 2 + ctx.lineWidth;
-                    const prongSize = Math.max(2, gridSize / 8);
-                    let startX, startY, midX, midY, tip1X, tip1Y, tip2X, tip2Y;
-                    if (direction === 'right') { startX = centerX + tongueOffset; startY = centerY; midX = startX + tongueLength / 2; midY = startY; tip1X = midX + prongSize; tip1Y = midY - prongSize; tip2X = midX + prongSize; tip2Y = midY + prongSize; }
-                    else if (direction === 'left') { startX = centerX - tongueOffset; startY = centerY; midX = startX - tongueLength / 2; midY = startY; tip1X = midX - prongSize; tip1Y = midY - prongSize; tip2X = midX - prongSize; tip2Y = midY + prongSize; }
-                    else if (direction === 'up') { startX = centerX; startY = centerY - tongueOffset; midX = startX; midY = startY - tongueLength / 2; tip1X = midX - prongSize; tip1Y = midY - prongSize; tip2X = midX + prongSize; tip2Y = midY - prongSize; }
-                    else { startX = centerX; startY = centerY + tongueOffset; midX = startX; midY = startY + tongueLength / 2; tip1X = midX - prongSize; tip1Y = midY + prongSize; tip2X = midX + prongSize; tip2Y = midY + prongSize; }
-                    ctx.moveTo(startX, startY); ctx.lineTo(midX, midY); ctx.lineTo(tip1X, tip1Y);
-                    ctx.moveTo(midX, midY); ctx.lineTo(tip2X, tip2Y);
-                    ctx.stroke();
+                let texture;
+
+                if (i === 0) { // Tête
+                    if (direction === 'up') texture = textures.head_up;
+                    else if (direction === 'down') texture = textures.head_down;
+                    else if (direction === 'left') texture = textures.head_left;
+                    else if (direction === 'right') texture = textures.head_right;
+                } else if (i === snake.length - 1) { // Queue
+                    const prev = snake[i - 1];
+                    if (segment.y > prev.y) texture = textures.tail_up;
+                    else if (segment.y < prev.y) texture = textures.tail_down;
+                    else if (segment.x > prev.x) texture = textures.tail_left;
+                    else if (segment.x < prev.x) texture = textures.tail_right;
+                } else { // Corps
+                    const prev = snake[i - 1];
+                    const next = snake[i + 1];
+                    if (prev.x === next.x) { // Droit vertical
+                        texture = textures.body_vertical;
+                    } else if (prev.y === next.y) { // Droit horizontal
+                        texture = textures.body_horizontal;
+                    } else { // Virage
+                        if ((prev.y < segment.y && next.x > segment.x) || (prev.x > segment.x && next.y < segment.y)) texture = textures.body_topright;
+                        else if ((prev.y < segment.y && next.x < segment.x) || (prev.x < segment.x && next.y < segment.y)) texture = textures.body_topleft;
+                        else if ((prev.y > segment.y && next.x > segment.x) || (prev.x > segment.x && next.y > segment.y)) texture = textures.body_bottomright;
+                        else if ((prev.y > segment.y && next.x < segment.x) || (prev.x < segment.x && next.y > segment.y)) texture = textures.body_bottomleft;
+                    }
                 }
-                if (index === snake.length - 1 && snake.length > 1) {
-                    const prevSegment = snake[index - 1];
-                    ctx.beginPath();
-                    let arcX = x + gridSize / 2, arcY = y + gridSize / 2;
-                    if (prevSegment.x > segment.x) { arcX = x; } else if (prevSegment.x < segment.x) { arcX = x + gridSize; }
-                    else if (prevSegment.y > segment.y) { arcY = y; } else if (prevSegment.y < segment.y) { arcY = y + gridSize; }
-                    if(segment.y !== prevSegment.y){ ctx.arc(arcX, arcY, gridSize / 2, segment.y > prevSegment.y ? Math.PI : 0, segment.y > prevSegment.y ? 0 : Math.PI); } 
-                    else { ctx.arc(arcX, arcY, gridSize / 2, segment.x > prevSegment.x ? Math.PI/2 : -Math.PI/2, segment.x > prevSegment.x ? -Math.PI/2 : Math.PI/2); }
-                    ctx.fill();
+                
+                if (texture && texture.complete) {
+                    ctx.drawImage(texture, x, y, gridSize, gridSize);
                 }
-            });
+            }
         }
 
         function drawGame() {
             drawBackground();
-            ctx.fillStyle = 'red';
             food.forEach(apple => {
-                ctx.beginPath();
-                ctx.arc(apple.x * gridSize + gridSize / 2, apple.y * gridSize + gridSize / 2, gridSize / 2, 0, 2 * Math.PI);
-                ctx.fill();
+                if (textures.apple.complete) {
+                    ctx.drawImage(textures.apple, apple.x * gridSize, apple.y * gridSize, gridSize, gridSize);
+                }
             });
             drawSnake();
         }
@@ -279,42 +261,43 @@ const key=e.key.toLowerCase();if((key==='arrowup'||key==='z'||key==='w')&&direct
         function resetGame(){replayButton.style.display='none';speedSlider.disabled=false;appleSlider.disabled=false;initGameVariables();resizeCanvas();drawStartScreen()}
         function setupTouchControls(){const isTouchDevice=('ontouchstart'in window)||(navigator.maxTouchPoints>0);if(!isTouchDevice)return;document.getElementById('touch-controls').style.display='block';const up=document.getElementById('touch-up'),down=document.getElementById('touch-down'),left=document.getElementById('touch-left'),right=document.getElementById('touch-right');const handleTouch=(e,newDirection)=>{e.preventDefault();if(countdownActive)return;if(!gameStarted)startGame();if(newDirection==='up'&&direction!=='down')nextDirection='up';if(newDirection==='down'&&direction!=='up')nextDirection='down';if(newDirection==='left'&&direction!=='right')nextDirection='left';if(newDirection==='right'&&direction!=='left')nextDirection='right'}
 up.addEventListener('touchstart',(e)=>handleTouch(e,'up'),{passive:false});down.addEventListener('touchstart',(e)=>handleTouch(e,'down'),{passive:false});left.addEventListener('touchstart',(e)=>handleTouch(e,'left'),{passive:false});right.addEventListener('touchstart',(e)=>handleTouch(e,'right'),{passive:false})}
+        function setupSliderTouch(){const sliders=[speedSlider,appleSlider];const e=e=>{const t=e.target;e.preventDefault();const n=t.getBoundingClientRect(),o=e.touches[0],l=o.clientX-n.left,i=Math.max(0,Math.min(1,l/n.width)),d=parseFloat(t.min),a=parseFloat(t.max);t.value=Math.round(d+(a-d)*i)};sliders.forEach(t=>{t.addEventListener("touchstart",e,{passive:!1}),t.addEventListener("touchmove",e,{passive:!1})})}
 
-        // --- NOUVEAU: Gestion tactile pour les sliders ---
-        function setupSliderTouch() {
-            const sliders = [speedSlider, appleSlider];
-
-            const handleSliderTouch = (e) => {
-                const slider = e.target;
-                // Empêche le scroll de la page pendant qu'on glisse le doigt
-                e.preventDefault();
-
-                // Calcule la nouvelle valeur en fonction de la position du doigt
-                const rect = slider.getBoundingClientRect();
-                const touch = e.touches[0];
-                const touchX = touch.clientX - rect.left;
-                const percent = Math.max(0, Math.min(1, touchX / rect.width));
-                
-                const min = parseFloat(slider.min);
-                const max = parseFloat(slider.max);
-                const range = max - min;
-                
-                const value = Math.round(min + range * percent);
-                slider.value = value;
-            };
-
-            sliders.forEach(slider => {
-                slider.addEventListener('touchstart', handleSliderTouch, { passive: false });
-                slider.addEventListener('touchmove', handleSliderTouch, { passive: false });
-            });
-}
-        
-        window.addEventListener('DOMContentLoaded', (event) => {
+        let texturesLoaded = 0;
+        const totalTextures = Object.keys(textures).length;
+        function onAllAssetsLoaded() {
             initGameVariables();
             resizeCanvas();
             drawStartScreen();
             setupTouchControls();
-            setupSliderTouch(); // Active la gestion tactile des sliders
+            setupSliderTouch();
+        }
+        function checkAssetLoad() {
+            texturesLoaded++;
+            if (texturesLoaded === totalTextures) {
+                onAllAssetsLoaded();
+            }
+        }
+        
+        window.addEventListener('DOMContentLoaded', (event) => {
+            for (const key in textures) {
+                textures[key].onload = checkAssetLoad;
+            }
+            textures.apple.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAKtJREFUOE+t07ENgzAUhOFvo1RCVESEjBHRgTqgA1B0BGeiQ6ACqpKk7YwHi/0Dac5/cmBLGI8PoPcqhC7g2505cZtPlZGAgI/pM82kTCGgvRHgZk1sA5Mv2wI+v/MNT7/d5y/a+Y/qjW2B5z/D4wYskb4sY8A2Gfs5JIAuM1K1f0DkTy3jgA7j5b2/gGXK5Z1xATB5u1f4/d4wO2N7APe8bQt4Bvz/L6D/gH8A/wD+gB9iXwB/AHz/f0BvK4C2E0A7L4B2D/D6pfEDvIBoQ2G6AAAAAElFTSuQmCC';
+            textures.head_up.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA0AAAAQCAYAAADNo/U5AAAAAXNSR0IArs4c6QAAAHhJREFUOE9jZKAQMJKkof///yM1MHgBifF/gqA8iG/g4ubz+/9/QhISGgM1cQCk/0+i/r/p/78Z/L8B6T8T//+f+M9k4P9/Nv//P/B/gPF/Dvj/X8L/gKz/T6T+P7D9fwD5/xP9/5/h/8+A/z8T/h/g//9f+P/fC//39GC4DgMAm4A+Vv0BwYkAAAAASUVORK5CYII=';
+            textures.head_down.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA0AAAAQCAYAAADNo/U5AAAAAXNSR0IArs4c6QAAAHBJREFUOE9jZKAQMFKonvEfl/H/JxISEsIIFeIIFGAiKkxfgKT/T6T+v2n+/5/B/z8D+f8T/f+f4f/PgP8/E/4f4P//X/j/3wv/9/QB5P9P9P9/hv8/A/7/TIRfYIY4QgFp/xPp/5/m/4/+/w//9wAAVdM/c0l/pWAAAAAASUVORK5CYII=';
+            textures.head_left.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAANCAYAAACgu+4kAAAAAXNSR0IArs4c6QAAAIlJREFUOE9jZKAQMJKkof///6M0A5+BgZkE8X8gE/+AmYGFgZkE+f8Tqf9fkv//M/z/WST8/xnx/2fA/58J/38G/P8Pif8fmfj/PzP//z/h/8/4//8X/u/vQf7/hKT/T6L+P9P//xmYGBgZkP8/kYGBCca/RBr/M1kYAGoMAODrPxR1b9hDAAAAAElFTSuQmCC';
+            textures.head_right.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAANCAYAAACgu+4kAAAAAXNSR0IArs4c6QAAAIdJREFUOE9jZKAQMJKkof///yM1MAb+M/z/WST8/xnx/2fA/58J/38G/P8Pif8fmfj/PzP//z/h/8/4//8X/u/vA4MBNgYjMPz/P5GBgQnGv0QajM3gAyKk/0+i/r/p/v+M3Ab+gZkZkP8/kYGBCSYD/4BM/AFmBiYAABhPP0/vVwW3AAAAAElFTSuQmCC';
+            textures.tail_up.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAcAAAAMCAYAAACulacQAAAAAXNSR0IArs4c6QAAADhJREFUOE9jZEAD////Gf7//z/BwMCYwIqBicGCgYnhhIGJ4ZeBiSGf4R+X8f//MgBJAABeXh8K5B4yXgAAAABJRU5ErkJggg==';
+            textures.tail_down.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAcAAAAMCAYAAACulacQAAAAAXNSR0IArs4c6QAAADFJREFUOE9jZCAD////M/xH5fz/fxYDAwNjAisGJgYLBiaGEwYmhncGJgYhDAwMzAAkAQB35R4K+j/bAAAAAElFTSuQmCC';
+            textures.tail_left.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAHCAYAAAA8T9gOAAAAAXNSR0IArs4c6QAAADhJREFUOE9jZEAD////Gf7//z/BwMDYgJVAxODHQMTgx0DE4MdAxODEQMTg5wz/kfz//////w+TAUgCAF2XHwo3bBw+AAAAAElFTSuQmCC';
+            textures.tail_right.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAHCAYAAAA8T9gOAAAAAXNSR0IArs4c6QAAADZJREFUOE9jZCAD////M/xH5fz/fxYDA2MDKwYnBicGJwYnBicGJwYnhicG5wz/kfz//z8lAJAFAFh7Hwpfe9MTAAAAAElFTSuQmCC';
+            textures.body_vertical.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAQCAYAAADXnxW3AAAAAXNSR0IArs4c6QAAAA5JREFUOE9j+A+FL/4PBgAJAgP+4W25aAAAAABJRU5ErkJggg==';
+            textures.body_horizontal.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAABCAYAAAD4Xf8/AAAAAXNSR0IArs4c6QAAAA5JREFUOE9j+A+Ff/4PBgAJAgP+iL0KdgAAAABJRU5ErkJggg==';
+            textures.body_topleft.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAAAXNSR0IArs4c6QAAAD9JREFUOE9jZEAD////hv///w8YgJVAxODHQMTgx0DE4MdAxODEQMTgx0DE4MdAxODEwMTg5wz/kfz/Px5kAxQDAN7jKBUA3EaJAAAAAElFTSuQmCC';
+            textures.body_topright.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAAAXNSR0IArs4c6QAAAD5JREFUOE9jZCAD////hv///w8YgJVAxODEQMTgx0DE4MdAxODEQMTgx0DE4MdAxODEQMTg5wz/kfz/P5UEUgwAAGYFKBU6L22VAAAAAElFTSuQmCC';
+            textures.body_bottomleft.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAAAXNSR0IArs4c6QAAAEFJREFUOE9jZEAD////hv///w8YgJVAxODHQMTgx0DE4MdAxODEQMTgx0DE4MdAxODEQMTg5wz/kfz/Pw9yA5sBSQAAe2IpCgC4/xAAAAAASUVORK5CYII=';
+            textures.body_bottomright.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAAAXNSR0IArs4c6QAAAD9JREFUOE9jZCAD////hv///w8YgJVAxODEQMTgx0DE4MdAxODEQMTgx0DE4MdAxODEQMTg5wz/kfz/P5UE2wxIAgBc3ikV++fPtgAAAABJRU5ErkJggg==';
         });
         window.addEventListener('resize', resizeCanvas);
         document.addEventListener('keydown', handleKeyPress);
