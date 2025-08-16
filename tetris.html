@@ -38,13 +38,14 @@
             position: relative;
             width: calc(var(--game-height) / 2);
             height: var(--game-height);
-            max-width: 45vh;
+            max-width: 45vh; /* Ratio 1:2 */
             max-height: 75vh; /* Hauteur réduite pour mobile */
         }
         canvas {
             width: 100%;
             height: 100%;
             border: 2px solid #555;
+            cursor: pointer;
         }
         .sidebar {
             display: flex;
@@ -61,20 +62,7 @@
         }
         .info-box p { margin: 5px 0; font-size: 1.2em; }
         .info-box span { font-size: 1.5em; color: #AED542; }
-        #next-piece-canvas {
-            background-color: #111;
-            border-radius: 5px;
-            width: 100%;
-            height: 100px;
-        }
-        #mobile-next-piece {
-            display: block;
-            margin-bottom: 20px;
-        }
-        #mobile-next-piece canvas {
-            height: 80px;
-            border: none;
-        }
+        
         .controls {
             text-align: center;
             width: 220px;
@@ -115,33 +103,31 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 2em;
+            font-size: 1.5em;
             color: #1a1a1a;
             user-select: none;
             width: 60px;
             height: 60px;
         }
         #touch-left { grid-area: 2 / 1 / 3 / 2; }
-        #touch-down { grid-area: 2 / 2 / 3 / 3; }
-        #touch-right { grid-area: 2 / 3 / 3 / 4; }
-        #touch-rotate-left { grid-area: 1 / 1 / 2 / 2; }
+        #touch-down { grid-area: 2 / 2 / 3 / 3; font-size: 2em;}
+        #touch-right { grid-area: 2 / 3 / 3 / 4; font-size: 2em;}
+        #touch-rotate-left { grid-area: 1 / 1 / 2 / 2; font-size: 2em;}
         #touch-drop { grid-area: 1 / 2 / 2 / 3; }
-        #touch-rotate-right { grid-area: 1 / 3 / 2 / 4; }
+        #touch-rotate-right { grid-area: 1 / 3 / 2 / 4; font-size: 2em;}
         
 
         @media (min-width: 700px) {
             .page-content {
                 flex-direction: row;
                 align-items: center;
-                gap: 20px; /* Espace réduit */
+                gap: 20px;
             }
-            #mobile-next-piece, #touch-controls {
-                display: none;
+            .sidebar {
+                order: 2;
             }
-        }
-        @media (max-width: 699px) {
-            .sidebar #next-piece-container, .game-column > p {
-                display: none;
+            .game-column {
+                order: 1;
             }
         }
     </style>
@@ -150,29 +136,21 @@
     <div class="page-content">
         <div class="game-column">
             <h1>TETRIS</h1>
-            <div id="mobile-next-piece" class="info-box">
-                 <p>PROCHAINE</p>
-                 <canvas id="mobile-next-piece-canvas"></canvas>
-            </div>
             <div class="game-wrapper" id="game-wrapper">
                 <canvas id="gameCanvas"></canvas>
                 <button id="replayButton">Rejouer</button>
             </div>
              <div id="touch-controls">
-                <div id="touch-drop" class="touch-btn">↓</div>
+                <div id="touch-drop" class="touch-btn">DROP</div>
                 <div id="touch-rotate-left" class="touch-btn">↺</div>
                 <div id="touch-rotate-right" class="touch-btn">↻</div>
                 <div id="touch-left" class="touch-btn">←</div>
                 <div id="touch-down" class="touch-btn">↓</div>
                 <div id="touch-right" class="touch-btn">→</div>
             </div>
-             <p style="font-size: 0.9em; margin-top: 15px;">Clavier : Flèches & ZQSD, Espace pour Drop</p>
+             <p style="font-size: 0.9em; margin-top: 15px;">Clavier : ← → ↓, Espace (Drop) | Souris: Clic G/D (Pivoter)</p>
         </div>
         <div class="sidebar">
-            <div id="next-piece-container" class="info-box">
-                <p>PROCHAINE</p>
-                <canvas id="next-piece-canvas"></canvas>
-            </div>
             <div class="info-box">
                 <p>SCORE</p>
                 <span id="current-score">0</span>
@@ -196,10 +174,6 @@
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        const nextCanvas = document.getElementById('next-piece-canvas');
-        const nextCtx = nextCanvas.getContext('2d');
-        const mobileNextCanvas = document.getElementById('mobile-next-piece-canvas');
-        const mobileNextCtx = mobileNextCanvas.getContext('2d');
         const currentScoreElement = document.getElementById('current-score');
         const highScoreElement = document.getElementById('high-score');
         const speedSlider = document.getElementById('speedSlider');
@@ -224,10 +198,6 @@
             const w = h / 2;
             canvas.height = h; canvas.width = w;
             blockSize = h / ROWS;
-            
-            nextCanvas.width = nextCanvas.clientWidth; nextCanvas.height = nextCanvas.clientHeight;
-            mobileNextCanvas.width = mobileNextCanvas.clientWidth; mobileNextCanvas.height = mobileNextCanvas.clientHeight;
-            
             draw();
         }
 
@@ -266,10 +236,8 @@
             
             player.piece = rotated;
             if (isValidMove(player.piece, 0, 0)) return;
-
             player.x += offset;
             if (isValidMove(player.piece, 0, 0)) return;
-            
             player.x -= offset * 2;
             if (isValidMove(player.piece, 0, 0)) return;
             
@@ -296,7 +264,7 @@
                 while(playfield.length < ROWS) playfield.unshift(Array(COLS).fill(0));
                 score += linesCleared * 10 * linesCleared;
                 level = Math.floor(score / 100) + parseInt(speedSlider.value);
-                dropInterval = 1000 / level;
+                dropInterval = 1000 / (level * 1.5);
             }
         }
         
@@ -331,23 +299,15 @@
             const deltaTime = time - lastTime;
             lastTime = time;
             dropCounter += deltaTime;
-
-            if (isValidMove(player.piece, 0, 1)) {
-                if (dropCounter > dropInterval) {
+            if (dropCounter > dropInterval) {
+                 if (isValidMove(player.piece, 0, 1)) {
                     player.y++;
                     dropCounter = 0;
-                }
-            } else {
-                placePiece();
-                clearLines();
-                playerReset();
-                if (!isValidMove(player.piece, 0, 0)) {
-                    gameState = 'GAME_OVER';
-                    replayButton.style.display = 'block';
-                    if (score > highScore) {
-                        highScore = score;
-                        localStorage.setItem('tetrisHighScore', highScore);
-                    }
+                } else {
+                    placePiece();
+                    clearLines();
+                    playerReset();
+                    if (!isValidMove(player.piece, 0, 0)) gameState = 'GAME_OVER';
                 }
             }
         }
@@ -396,20 +356,15 @@
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             drawGrid();
             drawPiece(playfield, {x: 0, y: 0}, ctx, blockSize);
-            if (gameState === 'PLAYING') drawPiece(player.piece, player, ctx, blockSize);
-            
-            const drawNext = (context, container) => {
-                context.fillStyle = '#111';
-                context.fillRect(0, 0, container.width, container.height);
+            if (gameState === 'PLAYING') {
+                drawPiece(player.piece, player, ctx, blockSize);
+                // Dessine la pièce suivante en transparence
                 if(nextPiece) {
-                    const nextPieceSize = container.height / 4;
-                    const offsetX = (container.width / nextPieceSize - nextPiece[0].length) / 2;
-                    const offsetY = (container.height / nextPieceSize - nextPiece.length) / 2;
-                    drawPiece(nextPiece, {x: offsetX, y: offsetY}, context, nextPieceSize);
+                    ctx.globalAlpha = 0.5;
+                    drawPiece(nextPiece, {x: COLS - nextPiece[0].length - 1, y: 1}, ctx, blockSize);
+                    ctx.globalAlpha = 1.0;
                 }
-            };
-            drawNext(nextCtx, nextCanvas);
-            drawNext(mobileNextCtx, mobileNextCanvas);
+            }
             currentScoreElement.textContent = score;
             highScoreElement.textContent = highScore;
         }
