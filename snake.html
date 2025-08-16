@@ -20,10 +20,9 @@
             overscroll-behavior: none;
         }
         
-        /* NOUVEAU: Conteneur principal pour la disposition PC / Mobile */
         .main-container {
             display: flex;
-            flex-direction: column; /* Mobile d'abord: tout en colonne */
+            flex-direction: column;
             align-items: center;
             gap: 20px;
         }
@@ -43,7 +42,6 @@
             image-rendering: pixelated;
         }
 
-        /* NOUVEAU: Panneau latéral pour les scores */
         .sidebar {
             text-align: center;
             font-size: 1.5em;
@@ -112,13 +110,12 @@
             border-radius: 10px;
         }
         #touch-up { top: 0; left: 50px; } #touch-down { bottom: 0; left: 50px; }
-        #touch-left { top: 50px; left: 0; } #touch-right { top: 50px; right: 0; }
+        #touch-left { top: 50px; left: 0; } #touch-right { top: 50px, right: 0; }
         
-        /* NOUVEAU: Media Query pour les écrans larges (PC) */
         @media (min-width: 1350px) {
             .main-container {
-                flex-direction: row; /* Met le jeu et le panneau côte à côte */
-                align-items: flex-start; /* Aligne en haut */
+                flex-direction: row;
+                align-items: flex-start;
             }
             .sidebar {
                 text-align: left;
@@ -166,18 +163,15 @@
                 <span id="current-score">0</span>
             </div>
             <div class="score-box">
-                <p>MEILLEUR</p>
+                <p>MEILLEUR SCORE</p>
                 <span id="high-score">0</span>
             </div>
         </div>
     </div>
 
     <script>
-        // --- Références aux nouveaux éléments ---
         const currentScoreElement = document.getElementById('current-score');
         const highScoreElement = document.getElementById('high-score');
-        
-        // --- Le reste du code JS est en grande partie inchangé, avec des ajouts pour le score ---
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const wrapper = document.getElementById('game-wrapper');
@@ -190,8 +184,9 @@
         let snake, food, direction, score, highScore, gameStarted, gameLoopInterval, currentLevel, numApples;
         let nextDirection = null;
         let countdownActive = false;
+        let isHalfStep = false; // Pour le mouvement fluide
         const maxLevel = 10;
-        const speeds = [150, 140, 130, 120, 110, 100, 95, 90, 85, 80]; 
+        const speeds = [75, 70, 65, 60, 55, 50, 47, 45, 42, 40]; 
         const scorePerLevel = 2;
 
         function resizeCanvas() {
@@ -214,10 +209,9 @@
         function initGameVariables() {
             snake = [{ x: Math.floor(tileCount/2), y: Math.floor(tileCount/2) }];
             food = [];
-            direction = 'right';
-            nextDirection = 'right';
+            direction = { x: 1, y: 0 }; // Droite
+            nextDirection = { x: 1, y: 0 };
             score = 0;
-            // Charge le meilleur score depuis la mémoire du navigateur
             highScore = localStorage.getItem('snakeHighScore_simple') || 0;
             gameStarted = false;
             gameLoopInterval = null;
@@ -238,31 +232,30 @@
         }
         
         function drawSnake() {
+            let offsetX = isHalfStep ? direction.x * gridSize / 2 : 0;
+            let offsetY = isHalfStep ? direction.y * gridSize / 2 : 0;
+            
             snake.forEach((segment, index) => {
                 ctx.fillStyle = '#6495ED';
-                const x = segment.x * gridSize;
-                const y = segment.y * gridSize;
+                const x = segment.x * gridSize + offsetX;
+                const y = segment.y * gridSize + offsetY;
+                
+                // Le dessin du corps et des arrondis est complexe avec le mouvement fluide,
+                // nous revenons à une forme simple de carrés pour la stabilité.
                 ctx.fillRect(x, y, gridSize, gridSize);
 
                 if (index === 0) { // Tête
-                    ctx.beginPath();
-                    let arcX = x + gridSize / 2, arcY = y + gridSize / 2;
-                    if (direction === 'right') { arcX = x + gridSize; } else if (direction === 'left') { arcX = x; }
-                    else if (direction === 'up') { arcY = y; } else if (direction === 'down') { arcY = y + gridSize; }
-                    if(direction === 'up' || direction === 'down'){ ctx.arc(arcX, arcY, gridSize / 2, direction === 'up' ? Math.PI : 0, direction === 'up' ? 0 : Math.PI); } 
-                    else { ctx.arc(arcX, arcY, gridSize / 2, direction === 'left' ? Math.PI/2 : -Math.PI/2, direction === 'left' ? -Math.PI/2 : Math.PI/2); }
-                    ctx.fill();
-
                     const centerX = x + gridSize / 2;
                     const centerY = y + gridSize / 2;
+                    
                     ctx.fillStyle = 'white';
                     const eyeRadius = Math.max(1.5, gridSize / 12);
                     let eye1X, eye1Y, eye2X, eye2Y;
                     const eyeOffset = gridSize / 4;
                     const eyeDist = gridSize / 5;
-                    if (direction === 'right') { eye1X = centerX + eyeDist; eye1Y = centerY - eyeOffset; eye2X = centerX + eyeDist; eye2Y = centerY + eyeOffset; }
-                    else if (direction === 'left') { eye1X = centerX - eyeDist; eye1Y = centerY - eyeOffset; eye2X = centerX - eyeDist; eye2Y = centerY + eyeOffset; }
-                    else if (direction === 'up') { eye1X = centerX - eyeOffset; eye1Y = centerY - eyeDist; eye2X = centerX + eyeOffset; eye2Y = centerY - eyeDist; }
+                    if (direction.x === 1) { eye1X = centerX + eyeDist; eye1Y = centerY - eyeOffset; eye2X = centerX + eyeDist; eye2Y = centerY + eyeOffset; }
+                    else if (direction.x === -1) { eye1X = centerX - eyeDist; eye1Y = centerY - eyeOffset; eye2X = centerX - eyeDist; eye2Y = centerY + eyeOffset; }
+                    else if (direction.y === -1) { eye1X = centerX - eyeOffset; eye1Y = centerY - eyeDist; eye2X = centerX + eyeOffset; eye2Y = centerY - eyeDist; }
                     else { eye1X = centerX - eyeOffset; eye1Y = centerY + eyeDist; eye2X = centerX + eyeOffset; eye2Y = centerY + eyeDist; }
                     ctx.beginPath();
                     ctx.arc(eye1X, eye1Y, eyeRadius, 0, 2 * Math.PI);
@@ -275,16 +268,8 @@
                     ctx.arc(eye1X, eye1Y, pupilRadius, 0, 2 * Math.PI);
                     ctx.arc(eye2X, eye2Y, pupilRadius, 0, 2 * Math.PI);
                     ctx.fill();
-                }
-                if (index === snake.length - 1 && snake.length > 1) { // Queue
-                    const prevSegment = snake[index - 1];
-                    ctx.beginPath();
-                    let arcX = x + gridSize / 2, arcY = y + gridSize / 2;
-                    if (prevSegment.x > segment.x) { arcX = x; } else if (prevSegment.x < segment.x) { arcX = x + gridSize; }
-                    else if (prevSegment.y > segment.y) { arcY = y; } else if (prevSegment.y < segment.y) { arcY = y + gridSize; }
-                    if(segment.y !== prevSegment.y){ ctx.arc(arcX, arcY, gridSize / 2, segment.y > prevSegment.y ? Math.PI : 0, segment.y > prevSegment.y ? 0 : Math.PI); } 
-                    else { ctx.arc(arcX, arcY, gridSize / 2, segment.x > prevSegment.x ? Math.PI/2 : -Math.PI/2, segment.x > prevSegment.x ? -Math.PI/2 : Math.PI/2); }
-                    ctx.fill();
+
+                    // La langue est retirée pour la version fluide car sa position devient complexe.
                 }
             });
         }
@@ -314,17 +299,25 @@
         function updateGameSpeed(){clearInterval(gameLoopInterval);const newSpeed=speeds[currentLevel-1];gameLoopInterval=setInterval(update,newSpeed)}
         
         function update(){
+            isHalfStep = !isHalfStep; // Alterne entre demi-pas et pas complet
+
+            if (isHalfStep) { // Demi-pas: on ne fait que redessiner
+                drawGame();
+                return;
+            }
+
             if(nextDirection){direction=nextDirection;nextDirection=null}
-            const head={x:snake[0].x,y:snake[0].y};
-            switch(direction){case'up':head.y--;break;case'down':head.y++;break;case'left':head.x--;break;case'right':head.x++;break}
+            const head={x:snake[0].x + direction.x, y:snake[0].y + direction.y};
+            
             if(head.x<0||head.x>=tileCount||head.y<0||head.y>=tileCount||snake.some(seg=>seg.x===head.x&&seg.y===head.y)){endGame();return}
+            
             snake.unshift(head);
             let eatenAppleIndex=-1;
             food.forEach((apple,index)=>{if(head.x===apple.x&&head.y===apple.y){eatenAppleIndex=index}});
             if(eatenAppleIndex>-1){
                 score++;
                 food.splice(eatenAppleIndex,1);
-                generateApples();
+generateApples();
                 const newLevel=Math.min(maxLevel,Math.floor(score/scorePerLevel)+1);
                 if(newLevel>currentLevel){currentLevel=newLevel;speedSlider.value=currentLevel;updateGameSpeed()}
             } else {
@@ -350,12 +343,19 @@
             ctx.fillText('GAME OVER',canvas.width/2,canvas.height/2);
             replayButton.style.display='block';
         }
-        function handleKeyPress(e){if(countdownActive)return;if(!gameStarted){startGame();return}
-const key=e.key.toLowerCase();if((key==='arrowup'||key==='z'||key==='w')&&direction!=='down')nextDirection='up';if((key==='arrowdown'||key==='s')&&direction!=='up')nextDirection='down';if((key==='arrowleft'||key==='q'||key==='a')&&direction!=='right')nextDirection='left';if((key==='arrowright'||key==='d')&&direction!=='left')nextDirection='right'}
+        function handleKeyPress(e){
+            if(countdownActive) return;
+            if(!gameStarted){startGame();return}
+            const key=e.key.toLowerCase();
+            if((key==='arrowup'||key==='z'||key==='w') && direction.y === 0) nextDirection = {x:0, y:-1};
+            if((key==='arrowdown'||key==='s') && direction.y === 0) nextDirection = {x:0, y:1};
+            if((key==='arrowleft'||key==='q'||key==='a') && direction.x === 0) nextDirection = {x:-1, y:0};
+            if((key==='arrowright'||key==='d') && direction.x === 0) nextDirection = {x:1, y:0};
+        }
         function startGame(){if(gameStarted)return;gameStarted=true;countdownActive=true;currentLevel=parseInt(speedSlider.value,10);numApples=parseInt(appleSlider.value,10);speedSlider.disabled=true;appleSlider.disabled=true;generateApples();let countdown=3;const countdownInterval=setInterval(()=>{drawGame();if(countdown>0){ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle='white';ctx.font=`${gridSize*7}px "Courier New"`;ctx.textAlign='center';ctx.fillText(countdown,canvas.width/2,canvas.height/2+gridSize*2);countdown--}else{clearInterval(countdownInterval);countdownActive=false;updateGameSpeed()}},1000)}
         function resetGame(){replayButton.style.display='none';speedSlider.disabled=false;appleSlider.disabled=false;initGameVariables();resizeCanvas();drawStartScreen()}
-        function setupTouchControls(){const isTouchDevice=('ontouchstart'in window)||(navigator.maxTouchPoints>0);if(!isTouchDevice)return;document.getElementById('touch-controls').style.display='block';const up=document.getElementById('touch-up'),down=document.getElementById('touch-down'),left=document.getElementById('touch-left'),right=document.getElementById('touch-right');const handleTouch=(e,newDirection)=>{e.preventDefault();if(countdownActive)return;if(!gameStarted)startGame();if(newDirection==='up'&&direction!=='down')nextDirection='up';if(newDirection==='down'&&direction!=='up')nextDirection='down';if(newDirection==='left'&&direction!=='right')nextDirection='left';if(newDirection==='right'&&direction!=='left')nextDirection='right'}
-up.addEventListener('touchstart',(e)=>handleTouch(e,'up'),{passive:false});down.addEventListener('touchstart',(e)=>handleTouch(e,'down'),{passive:false});left.addEventListener('touchstart',(e)=>handleTouch(e,'left'),{passive:false});right.addEventListener('touchstart',(e)=>handleTouch(e,'right'),{passive:false})}
+        function setupTouchControls(){const isTouchDevice=('ontouchstart'in window)||(navigator.maxTouchPoints>0);if(!isTouchDevice)return;document.getElementById('touch-controls').style.display='block';const up=document.getElementById('touch-up'),down=document.getElementById('touch-down'),left=document.getElementById('touch-left'),right=document.getElementById('touch-right');const handleTouch=(e,newDir)=>{e.preventDefault();if(countdownActive)return;if(!gameStarted)startGame();if(newDir.y === 0 && direction.y !== 0) nextDirection = newDir; if(newDir.x === 0 && direction.x !== 0) nextDirection = newDir;}
+up.addEventListener('touchstart',(e)=>handleTouch(e,{x:0,y:-1}),{passive:false});down.addEventListener('touchstart',(e)=>handleTouch(e,{x:0,y:1}),{passive:false});left.addEventListener('touchstart',(e)=>handleTouch(e,{x:-1,y:0}),{passive:false});right.addEventListener('touchstart',(e)=>handleTouch(e,{x:1,y:0}),{passive:false})}
         function setupSliderTouch(){const sliders=[speedSlider,appleSlider];const e=e=>{const t=e.target;e.preventDefault();const n=t.getBoundingClientRect(),o=e.touches[0],l=o.clientX-n.left,i=Math.max(0,Math.min(1,l/n.width)),d=parseFloat(t.min),a=parseFloat(t.max);t.value=Math.round(d+(a-d)*i)};sliders.forEach(t=>{t.addEventListener("touchstart",e,{passive:!1}),t.addEventListener("touchmove",e,{passive:!1})})}
 
         window.addEventListener('DOMContentLoaded', (event) => {
