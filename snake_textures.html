@@ -4,91 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Snake avec Textures</title>
-    <style>
-        :root { --game-size: 884px; }
-        body {
-            background-color: #1a1a1a;
-            color: #fff;
-            font-family: 'Courier New', Courier, monospace;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px 0;
-            box-sizing: border-box;
-            overscroll-behavior: none;
-        }
-        .game-wrapper {
-            position: relative;
-            width: var(--game-size);
-            height: var(--game-size);
-            max-width: 95vw;
-            max-height: 95vw;
-        }
-        canvas {
-            width: 100%;
-            height: 100%;
-            border: 2px solid #555;
-            box-sizing: border-box;
-            image-rendering: pixelated;
-        }
-        .controls {
-            text-align: center;
-            margin-top: 15px;
-            width: 400px;
-            max-width: 95vw;
-        }
-        p { margin: 5px 0; font-size: 1.2em; }
-        .slider-container { margin-top: 10px; }
-        .slider-labels {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.8em;
-            padding: 0 5px;
-            box-sizing: border-box;
-            margin-bottom: 2px;
-        }
-        input[type="range"] {
-            -webkit-appearance: none; appearance: none;
-            width: 100%; height: 15px; background: #555;
-            border-radius: 5px; outline: none; opacity: 0.7;
-        }
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none; appearance: none;
-            width: 25px; height: 25px; background: #6495ED;
-            border: 2px solid white; border-radius: 50%; cursor: pointer;
-        }
-        #appleSlider::-webkit-slider-thumb { background: red; }
-        #replayButton {
-            display: none; position: absolute;
-            top: 60%; left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 10; padding: 15px 30px;
-            font-size: 1.5em; font-family: 'Courier New', Courier, monospace;
-            color: white; background-color: #008CBA;
-            border: 3px solid white; border-radius: 8px;
-            cursor: pointer;
-        }
-        #touch-controls {
-            display: none;
-            position: relative;
-            margin: 20px auto 10px auto;
-            width: 150px;
-            height: 150px;
-        }
-        .touch-btn {
-            position: absolute;
-            width: 50px;
-            height: 50px;
-            background-color: rgba(255, 255, 255, 0.7);
-            border-radius: 10px;
-        }
-        #touch-up { top: 0; left: 50px; }
-        #touch-down { bottom: 0; left: 50px; }
-        #touch-left { top: 50px; left: 0; }
-        #touch-right { top: 50px; right: 0; }
-    </style>
+    <style>:root { --game-size: 884px; } body { background-color: #1a1a1a; color: #fff; font-family: 'Courier New', Courier, monospace; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px 0; box-sizing: border-box; overscroll-behavior: none; } .game-wrapper { position: relative; width: var(--game-size); height: var(--game-size); max-width: 95vw; max-height: 95vw; } canvas { width: 100%; height: 100%; border: 2px solid #555; box-sizing: border-box; image-rendering: pixelated; } .controls { text-align: center; margin-top: 15px; width: 400px; max-width: 95vw; } p { margin: 5px 0; font-size: 1.2em; } .slider-container { margin-top: 10px; } .slider-labels { display: flex; justify-content: space-between; font-size: 0.8em; padding: 0 5px; box-sizing: border-box; margin-bottom: 2px; } input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 15px; background: #555; border-radius: 5px; outline: none; opacity: 0.7; } input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 25px; height: 25px; background: #6495ED; border: 2px solid white; border-radius: 50%; cursor: pointer; } #appleSlider::-webkit-slider-thumb { background: red; } #replayButton { display: none; position: absolute; top: 60%; left: 50%; transform: translate(-50%, -50%); z-index: 10; padding: 15px 30px; font-size: 1.5em; font-family: 'Courier New', Courier, monospace; color: white; background-color: #008CBA; border: 3px solid white; border-radius: 8px; cursor: pointer; } #touch-controls { display: none; position: relative; margin: 20px auto 10px auto; width: 150px; height: 150px; } .touch-btn { position: absolute; width: 50px; height: 50px; background-color: rgba(255, 255, 255, 0.7); border-radius: 10px; } #touch-up { top: 0; left: 50px; } #touch-down { bottom: 0; left: 50px; } #touch-left { top: 50px; left: 0; } #touch-right { top: 50px; right: 0; }</style>
 </head>
 <body>
     <h1>SNAKE</h1>
@@ -116,14 +32,12 @@
         </div>
         <p style="font-size: 0.9em; margin-top: 15px;">Utilisez les flèches ou ZQSD</p>
     </div>
-
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const wrapper = document.getElementById('game-wrapper');
         const tileCount = 22;
         let gridSize; 
-        
         const textures = {
             apple: new Image(), head_up: new Image(), head_down: new Image(), head_left: new Image(), head_right: new Image(),
             tail_up: new Image(), tail_down: new Image(), tail_left: new Image(), tail_right: new Image(),
@@ -152,9 +66,10 @@
                 drawGame();
             }
         }
-
         function initGameVariables() {
-            snake = [{ x: Math.floor(tileCount/2), y: Math.floor(tileCount/2) }];
+            const startX = Math.floor(tileCount / 2);
+            const startY = Math.floor(tileCount / 2);
+            snake = [ { x: startX, y: startY }, { x: startX - 1, y: startY } ];
             food = [];
             direction = 'right';
             nextDirection = 'right';
@@ -165,7 +80,6 @@
             numApples = parseInt(appleSlider.value, 10);
             scoreElement.textContent = score;
         }
-        
         function drawBackground() {
             const color1 = '#AED542';
             const color2 = '#A4D13D';
@@ -176,7 +90,6 @@
                 }
             }
         }
-        
         function drawSnake() {
             if (!snake || snake.length === 0) return;
             for (let i = 0; i < snake.length; i++) {
@@ -184,7 +97,6 @@
                 const x = segment.x * gridSize;
                 const y = segment.y * gridSize;
                 let texture;
-
                 if (i === 0) {
                     if (direction === 'up') texture = textures.head_up;
                     else if (direction === 'down') texture = textures.head_down;
@@ -215,7 +127,6 @@
                 }
             }
         }
-
         function drawGame() {
             drawBackground();
             food.forEach(apple => {
@@ -225,7 +136,6 @@
             });
             drawSnake();
         }
-        
         function drawStartScreen(){
             drawBackground();
             ctx.fillStyle='rgba(0, 0, 0, 0.4)';
@@ -235,7 +145,6 @@
             ctx.textAlign='center';
             ctx.fillText('Appuyez pour jouer',canvas.width/2,canvas.height/2);
         }
-        
         function generateApples(){while(food.length<numApples){let newApple={x:Math.floor(Math.random()*tileCount),y:Math.floor(Math.random()*tileCount)};const onSnake=snake.some(seg=>seg.x===newApple.x&&seg.y===newApple.y);const onFood=food.some(f=>f.x===newApple.x&&f.y===newApple.y);if(!onSnake&&!onFood){food.push(newApple)}}}
         function updateGameSpeed(){clearInterval(gameLoopInterval);const newSpeed=speeds[currentLevel-1];gameLoopInterval=setInterval(update,newSpeed)}
         function update(){if(nextDirection){direction=nextDirection;nextDirection=null}
@@ -263,14 +172,12 @@ up.addEventListener('touchstart',(e)=>handleTouch(e,'up'),{passive:false});down.
 
         let texturesLoaded = 0;
         const totalTextures = Object.keys(textures).length;
-
         function onAllAssetsLoaded() {
             initGameVariables();
             resizeCanvas();
             drawStartScreen();
             setupTouchControls();
         }
-
         function checkAssetLoad() {
             texturesLoaded++;
             if (texturesLoaded === totalTextures) {
@@ -298,7 +205,6 @@ up.addEventListener('touchstart',(e)=>handleTouch(e,'up'),{passive:false});down.
             textures.body_bottomleft.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAAAXNSR0IArs4c6QAAAEFJREFUOE9jZEAD////hv///w8YgJVAxODHQMTgx0DE4MdAxODEQMTgx0DE4MdAxODEQMTg5wz/kfz/Pw9yA5sBSQAAe2IpCgC4/xAAAAAASUVORK5CYII=';
             textures.body_bottomright.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAAAXNSR0IArs4c6QAAAD9JREFUOE9jZCAD////hv///w8YgJVAxODEQMTgx0DE4MdAxODEQMTgx0DE4MdAxODEQMTg5wz/kfz/P5UE2wxIAgBc3ikV++fPtgAAAABJRU5ErkJggg==';
         });
-
         window.addEventListener('resize', resizeCanvas);
         document.addEventListener('keydown', handleKeyPress);
         replayButton.addEventListener('click', resetGame);
