@@ -32,7 +32,7 @@
         .game-column {
             display: flex;
             flex-direction: column;
-            align-items: center;
+            align-items: center; /* Centre les éléments à l'intérieur, comme le nouveau best-score */
         }
         .game-wrapper {
             position: relative;
@@ -41,7 +41,7 @@
             max-width: 45vh; /* Ratio 1:2 */
             max-height: 75vh;
         }
-        canvas#gameCanvas { /* Cible le canvas du jeu spécifiquement */
+        canvas#gameCanvas {
             width: 100%;
             height: 100%;
             border: 2px solid #555;
@@ -50,7 +50,7 @@
             display: flex;
             flex-direction: column;
             gap: 20px;
-            width: 220px; /* Largeur fixe pour la barre latérale */
+            width: 220px;
         }
         .info-box {
             background-color: #2a2a2a;
@@ -61,6 +61,12 @@
         }
         .info-box p { margin: 5px 0; font-size: 1.2em; }
         .info-box span { font-size: 1.5em; color: #AED542; }
+
+        /* MODIFICATION : Style pour le bloc BEST SCORE qui est maintenant centré */
+        #best-score-box {
+            width: 220px;
+            margin-top: 20px;
+        }
         
         .controls { text-align: center; }
         .slider-container { margin-top: 10px; }
@@ -142,6 +148,10 @@
                 <div id="touch-down" class="touch-btn">↓</div>
                 <div id="touch-right" class="touch-btn">→</div>
             </div>
+            <div class="info-box" id="best-score-box">
+                <p>BEST SCORE</p>
+                <span id="high-score">0</span>
+            </div>
             <p class="keyboard-instructions" style="font-size: 0.9em; margin-top: 15px;">Clavier : ← → ↓, Espace (Drop) | Souris: Clic G/D (Pivoter)</p>
         </div>
         
@@ -149,10 +159,6 @@
             <div class="info-box">
                 <p>SCORE</p>
                 <span id="current-score">0</span>
-            </div>
-            <div class="info-box">
-                <p>BEST SCORE</p>
-                <span id="high-score">0</span>
             </div>
             <div class="info-box controls">
                 <div class="slider-container">
@@ -368,7 +374,6 @@
                     ctx.globalAlpha = 0.7;
                     const nextPieceSize = blockSize * 0.6;
                     
-                    // Coordonnée X et Y du texte "NEXT" en pixels
                     const textX = (COLS - 1.2) * blockSize; 
                     const textY = 0.8 * blockSize;
                     
@@ -377,12 +382,8 @@
                     ctx.textAlign = 'center';
                     ctx.fillText('NEXT', textX, textY);
 
-                    // --- MODIFICATION : Calcul exact de la position de la pièce ---
-                    
-                    // 1. Position Y : Y du texte + 60 pixels, converti en "unités de bloc"
-                    const pieceY = (textY + 60) / nextPieceSize;
-                    
-                    // 2. Position X : Centrée parfaitement sous le texte, convertie en "unités de bloc"
+                    // MODIFICATION : la distance est maintenant de 30 pixels au lieu de 60
+                    const pieceY = (textY + 30) / nextPieceSize;
                     const pieceX = (textX / nextPieceSize) - (nextPiece[0].length / 2);
                     
                     drawPiece(nextPiece, {x: pieceX, y: pieceY}, ctx, nextPieceSize);
