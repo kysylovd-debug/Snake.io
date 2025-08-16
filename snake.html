@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Jeu du Serpent v2</title>
+    <title>Jeu du Serpent</title>
     <style>
         :root { --game-size: 884px; }
         body {
@@ -124,12 +124,48 @@
         const tileCount = 22;
         let gridSize; 
         
+        const scoreElement = document.getElementById('score');
+        const speedSlider = document.getElementById('speedSlider');
+        const appleSlider = document.getElementById('appleSlider');
+        const replayButton = document.getElementById('replayButton');
+        let snake, food, direction, score, gameStarted, gameLoopInterval, currentLevel, numApples;
+        let nextDirection = null;
+        let countdownActive = false;
+        const maxLevel = 10;
+        const speeds = [150, 140, 130, 120, 110, 100, 95, 90, 85, 80]; 
+        const scorePerLevel = 2;
+
+        // --- NOUVEAU: Pré-chargeur de textures ---
         const textures = {
             apple: new Image(), head_up: new Image(), head_down: new Image(), head_left: new Image(), head_right: new Image(),
             tail_up: new Image(), tail_down: new Image(), tail_left: new Image(), tail_right: new Image(),
             body_vertical: new Image(), body_horizontal: new Image(),
             body_topleft: new Image(), body_topright: new Image(), body_bottomleft: new Image(), body_bottomright: new Image()
         };
+        let texturesLoaded = 0;
+        const totalTextures = Object.keys(textures).length;
+
+        function onAllAssetsLoaded() {
+            // Cette fonction est appelée UNIQUEMENT quand toutes les images sont prêtes
+            initGameVariables();
+            resizeCanvas();
+            drawStartScreen();
+            setupTouchControls();
+        }
+
+        function checkAssetLoad() {
+            texturesLoaded++;
+            if (texturesLoaded === totalTextures) {
+                onAllAssetsLoaded();
+            }
+        }
+
+        // Attache l'événement 'onload' à chaque image
+        for (const key in textures) {
+            textures[key].onload = checkAssetLoad;
+        }
+
+        // Attribue les sources (Base64) pour lancer le chargement
         textures.apple.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAKtJREFUOE+t07ENgzAUhOFvo1RCVESEjBHRgTqgA1B0BGeiQ6ACqpKk7YwHi/0Dac5/cmBLGI8PoPcqhC7g2505cZtPlZGAgI/pM82kTCGgvRHgZk1sA5Mv2wI+v/MNT7/d5y/a+Y/qjW2B5z/D4wYskb4sY8A2Gfs5JIAuM1K1f0DkTy3jgA7j5b2/gGXK5Z1xATB5u1f4/d4wO2N7APe8bQt4Bvz/L6D/gH8A/wD+gB9iXwB/AHz/f0BvK4C2E0A7L4B2D/D6pfEDvIBoQ2G6AAAAAElFTSuQmCC';
         textures.head_up.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA0AAAAQCAYAAADNo/U5AAAAAXNSR0IArs4c6QAAAHhJREFUOE9jZKAQMJKkof///yM1MHgBifF/gqA8iG/g4ubz+/9/QhISGgM1cQCk/0+i/r/p/78Z/L8B6T8T//+f+M9k4P9/Nv//P/B/gPF/Dvj/X8L/gKz/T6T+P7D9fwD5/xP9/5/h/8+A/z8T/h/g//9f+P/fC//39GC4DgMAm4A+Vv0BwYkAAAAASUVORK5CYII=';
         textures.head_down.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA0AAAAQCAYAAADNo/U5AAAAAXNSR0IArs4c6QAAAHBJREFUOE9jZKAQMFKonvEfl/H/JxISEsIIFeIIFGAiKkxfgKT/T6T+v2n+/5/B/z8D+f8T/f+f4f/PgP8/E/4f4P//X/j/3wv/9/QB5P9P9P9/hv8/A/7/TIRfYIY4QgFp/xPp/5/m/4/+/w//9wAAVdM/c0l/pWAAAAAASUVORK5CYII=';
@@ -145,18 +181,7 @@
         textures.body_topright.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAAAXNSR0IArs4c6QAAAD5JREFUOE9jZCAD////hv///w8YgJVAxODEQMTgx0DE4MdAxODEQMTgx0DE4MdAxODEQMTg5wz/kfz/P5UEUgwAAGYFKBU6L22VAAAAAElFTSuQmCC';
         textures.body_bottomleft.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAAAXNSR0IArs4c6QAAAEFJREFUOE9jZEAD////hv///w8YgJVAxODHQMTgx0DE4MdAxODEQMTgx0DE4MdAxODEQMTg5wz/kfz/Pw9yA5sBSQAAe2IpCgC4/xAAAAAASUVORK5CYII=';
         textures.body_bottomright.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAAAXNSR0IArs4c6QAAAD9JREFUOE9jZCAD////hv///w8YgJVAxODEQMTgx0DE4MdAxODEQMTgx0DE4MdAxODEQMTg5wz/kfz/P5UE2wxIAgBc3ikV++fPtgAAAABJRU5ErkJggg==';
-
-        const scoreElement = document.getElementById('score');
-        const speedSlider = document.getElementById('speedSlider');
-        const appleSlider = document.getElementById('appleSlider');
-        const replayButton = document.getElementById('replayButton');
-        let snake, food, direction, score, gameStarted, gameLoopInterval, currentLevel, numApples;
-        let nextDirection = null;
-        let countdownActive = false;
-        const maxLevel = 10;
-        const speeds = [150, 140, 130, 120, 110, 100, 95, 90, 85, 80]; 
-        const scorePerLevel = 2;
-
+        
         function resizeCanvas() {
             const size = Math.min(wrapper.clientWidth, wrapper.clientHeight);
             canvas.width = size;
@@ -169,14 +194,8 @@
             }
         }
 
-        // MODIFICATION: Le serpent démarre avec 2 segments
         function initGameVariables() {
-            const startX = Math.floor(tileCount / 2);
-            const startY = Math.floor(tileCount / 2);
-            snake = [
-                { x: startX, y: startY },     // Tête
-                { x: startX - 1, y: startY }  // Queue
-            ];
+            snake = [{ x: Math.floor(tileCount/2), y: Math.floor(tileCount/2) }];
             food = [];
             direction = 'right';
             nextDirection = 'right';
@@ -241,7 +260,9 @@
         function drawGame() {
             drawBackground();
             food.forEach(apple => {
-                ctx.drawImage(textures.apple, apple.x * gridSize, apple.y * gridSize, gridSize, gridSize);
+                if (textures.apple.complete) {
+                    ctx.drawImage(textures.apple, apple.x * gridSize, apple.y * gridSize, gridSize, gridSize);
+                }
             });
             drawSnake();
         }
@@ -281,15 +302,13 @@ const key=e.key.toLowerCase();if((key==='arrowup'||key==='z'||key==='w')&&direct
         function setupTouchControls(){const isTouchDevice=('ontouchstart'in window)||(navigator.maxTouchPoints>0);if(!isTouchDevice)return;document.getElementById('touch-controls').style.display='block';const up=document.getElementById('touch-up'),down=document.getElementById('touch-down'),left=document.getElementById('touch-left'),right=document.getElementById('touch-right');const handleTouch=(e,newDirection)=>{e.preventDefault();if(countdownActive)return;if(!gameStarted)startGame();if(newDirection==='up'&&direction!=='down')nextDirection='up';if(newDirection==='down'&&direction!=='up')nextDirection='down';if(newDirection==='left'&&direction!=='right')nextDirection='left';if(newDirection==='right'&&direction!=='left')nextDirection='right'}
 up.addEventListener('touchstart',(e)=>handleTouch(e,'up'),{passive:false});down.addEventListener('touchstart',(e)=>handleTouch(e,'down'),{passive:false});left.addEventListener('touchstart',(e)=>handleTouch(e,'left'),{passive:false});right.addEventListener('touchstart',(e)=>handleTouch(e,'right'),{passive:false})}
 
+        // MODIFICATION: Le jeu ne démarre qu'après le chargement des images
         window.addEventListener('DOMContentLoaded', (event) => {
-            initGameVariables();
-            resizeCanvas();
-            drawStartScreen();
-            setupTouchControls();
+            // Attache les écouteurs d'événements qui n'ont pas besoin des images
+            window.addEventListener('resize', resizeCanvas);
+            document.addEventListener('keydown', handleKeyPress);
+            replayButton.addEventListener('click', resetGame);
         });
-        window.addEventListener('resize', resizeCanvas);
-        document.addEventListener('keydown', handleKeyPress);
-        replayButton.addEventListener('click', resetGame);
     </script>
 </body>
 </html>
