@@ -13,41 +13,23 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
             min-height: 100vh;
             margin: 0;
             padding: 20px 0;
             box-sizing: border-box;
             overscroll-behavior: none;
         }
-        
         h1 {
             font-size: 3em;
             margin-bottom: 20px;
         }
 
-        /* NOUVEAU: Conteneur pour les scores en haut */
-        .scores-container {
+        /* Le conteneur principal devient la référence pour le positionnement */
+        .main-container {
+            position: relative;
             display: flex;
-            gap: 20px; /* Espace entre les deux boîtes de score */
-            margin-bottom: 20px;
-        }
-
-        .score-box {
-            background-color: #2a2a2a;
-            padding: 10px 20px;
-            border-radius: 8px;
-            border: 2px solid #555;
-            text-align: center;
-            width: 180px; /* Largeur fixe pour l'alignement */
-        }
-        .score-box p {
-            margin: 5px 0;
-            font-size: 1.2em;
-        }
-        .score-box span {
-            font-size: 1.5em;
-            color: #AED542;
+            justify-content: center; /* Centre le jeu horizontalement */
+            width: 100%;
         }
 
         .game-wrapper {
@@ -63,6 +45,35 @@
             border: 2px solid #555;
             box-sizing: border-box;
         }
+
+        .sidebar {
+            /* Par défaut (mobile), les scores sont gérés par .scores-container */
+        }
+        .scores-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-top: 20px;
+            width: 100%;
+            align-items: center;
+        }
+        .score-box {
+            background-color: #2a2a2a;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 2px solid #555;
+            text-align: center;
+            width: 220px;
+        }
+        .score-box p {
+            margin: 5px 0;
+            font-size: 1.2em;
+        }
+        .score-box span {
+            font-size: 1.5em;
+            color: #AED542;
+        }
+
         .controls {
             text-align: center;
             width: 400px;
@@ -114,25 +125,43 @@
         #touch-up { top: 0; left: 50px; } #touch-down { bottom: 0; left: 50px; }
         #touch-left { top: 50px; left: 0; } #touch-right { top: 50px; right: 0; }
         
+        @media (min-width: 1350px) {
+            .scores-container {
+                /* Positionnement absolu par rapport au .main-container */
+                position: absolute;
+                left: 50%;
+                top: 0;
+                /* On le décale de la moitié du jeu + une marge */
+                margin-left: calc(var(--game-size) / 2 + 30px);
+                margin-top: 0;
+                flex-direction: column; /* Garde les boîtes l'une sur l'autre */
+                width: auto; /* La largeur s'adapte au contenu */
+            }
+            .sidebar {
+                 text-align: left;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="scores-container">
-        <div class="score-box">
-            <p>SCORE</p>
-            <span id="current-score">0</span>
-        </div>
-        <div class="score-box">
-            <p>MEILLEUR SCORE</p>
-            <span id="high-score">0</span>
-        </div>
-    </div>
-
     <h1>SNAKE</h1>
 
-    <div class="game-wrapper" id="game-wrapper">
-        <canvas id="gameCanvas"></canvas>
-        <button id="replayButton">Rejouer</button>
+    <div class="main-container">
+        <div class="game-wrapper" id="game-wrapper">
+            <canvas id="gameCanvas"></canvas>
+            <button id="replayButton">Rejouer</button>
+        </div>
+
+        <div class="scores-container">
+            <div class="score-box">
+                <p>SCORE</p>
+                <span id="current-score">0</span>
+            </div>
+            <div class="score-box">
+                <p>MEILLEUR SCORE</p>
+                <span id="high-score">0</span>
+            </div>
+        </div>
     </div>
     
     <div id="touch-controls">
@@ -157,6 +186,7 @@
     </div>
 
     <script>
+        // --- LE JAVASCRIPT RESTE INCHANGÉ ---
         const currentScoreElement = document.getElementById('current-score');
         const highScoreElement = document.getElementById('high-score');
         const canvas = document.getElementById('gameCanvas');
